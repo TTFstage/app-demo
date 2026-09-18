@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Create group{% endblock %}
+
+{% block content %}
+<section class="form-shell section-soft">
+    <div class="container form-layout">
+        <div class="form-card">
+            <div class="breadcrumb"><a href="{{ url_for('group.index') }}">Groups</a><span>/</span><span>Create</span></div>
+            <span class="eyebrow">New crew</span>
+            <h1>Create a rider group</h1>
+            <p class="form-intro">Give your group a clear name. RoR creates a private join code and invite link for you.</p>
+
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="field">
+                    <label for="name">Group name</label>
+                    <input id="name" type="text" name="name" value="{{ form.name.data or '' }}" placeholder="e.g. Milan evening crew" required autofocus>
+                    {% for e in form.name.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                </div>
+                <div class="field">
+                    <label for="description">Description <span class="meta">(optional)</span></label>
+                    <textarea id="description" name="description" rows="3" placeholder="What brings this crew together?">{{ form.description.data or '' }}</textarea>
+                    {% for e in form.description.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">Create group</button>
+                    <a class="btn btn-secondary" href="{{ url_for('group.index') }}">Cancel</a>
+                </div>
+            </form>
+        </div>
+        <aside class="form-aside">
+            <span class="eyebrow">Private by default</span>
+            <h2>You decide who gets in.</h2>
+            <p>Every group uses a unique code and revocable invite link. Owners control member roles.</p>
+        </aside>
+    </div>
+</section>
+{% endblock %}

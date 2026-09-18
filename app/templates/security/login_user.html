@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+    <section class="auth-visual" aria-label="RoR rider experience">
+        <div class="auth-visual-copy">
+            <span class="eyebrow">Welcome back</span>
+            <h1>Pick up where the road left off.</h1>
+        </div>
+        <div class="auth-proof">
+            <span class="live-dot" aria-hidden="true"></span>
+            <span>Secure sessions. Private ride data. Your crew only.</span>
+        </div>
+    </section>
+
+    <section class="auth-form-wrap">
+        <div class="auth-form">
+            <span class="eyebrow">Rider access</span>
+            <h2>Log in</h2>
+            <p>Use your username or email to enter your workspace.</p>
+
+            <form method="POST" action="{{ url_for('security.login') }}">
+                {{ login_user_form.hidden_tag() }}
+
+                <div class="field">
+                    <label for="identity">Username or email</label>
+                    <input type="text" id="identity" name="identity" value="{{ request.form.get('identity', '') }}" autocomplete="username" placeholder="you@example.com" required autofocus>
+                    {% for error in login_user_form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    {% for error in login_user_form.username.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                </div>
+
+                <div hidden>
+                    {{ login_user_form.email() }}
+                    {{ login_user_form.username() }}
+                </div>
+
+                <div class="field">
+                    <label for="password">Password</label>
+                    {{ login_user_form.password(autocomplete="current-password", placeholder="Enter your password") }}
+                    {% for error in login_user_form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                </div>
+
+                <button class="btn btn-primary btn-block" type="submit">Log in</button>
+            </form>
+
+            <p class="auth-switch">New to RoR? <a href="{{ url_for('security.register') }}">Create an account</a></p>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    const form = document.querySelector('.auth-form form');
+    if (!form) return;
+    form.addEventListener('submit', function () {
+        const value = document.getElementById('identity').value;
+        if (value.includes('@')) {
+            document.getElementById('email').value = value;
+            document.getElementById('username').value = '';
+        } else {
+            document.getElementById('username').value = value;
+            document.getElementById('email').value = '';
+        }
+    });
+})();
+</script>
+{% endblock %}

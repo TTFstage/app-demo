@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-row">
+        <div>
+            <div class="breadcrumb"><a href="{{ url_for('group.index') }}">Groups</a><span>/</span><span>{{ group.name }}</span></div>
+            <span class="role-badge">{{ membership.role }}</span>
+            <h1>{{ group.name }}</h1>
+            <p>{{ group.description or 'Private rider group' }}</p>
+        </div>
+        <a class="btn btn-primary" href="{{ url_for('map_pages.home', group_id=group.id) }}">View live group map</a>
+    </div>
+</section>
+
+<section class="container page-section-sm">
+    <div class="group-summary">
+        <div class="content-card">
+            <span class="eyebrow">Members</span>
+            <h2>{{ members|length }} rider{{ '' if members|length == 1 else 's' }}</h2>
+            <p class="lead">People who can access this group's shared road context.</p>
+        </div>
+        <aside class="invite-panel">
+            <span class="eyebrow">Join code</span>
+            <p>Share this code with someone you trust.</p>
+            <div class="code-display">
+                <code id="group-code" data-value="{{ group.code }}">{{ group.code }}</code>
+                <button class="copy-button" type="button" data-copy="group-code" aria-label="Copy group code"><span aria-hidden="true">⧉</span></button>
+            </div>
+        </aside>
+    </div>
+
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Rider</th><th>Email</th><th>Role</th><th>Management</th></tr></thead>
+            <tbody>
+            {% for m in members %}
+            <tr>
+                <td>
+                    <div class="contact-main">
+                        <span class="contact-avatar">{{ m.user.username[:1]|upper }}</span>
+                        <div><strong>{{ m.user.username }}</strong>{% if m.user.id == current_user.id %}<div class="member-position">You</div>{% endif %}</div>
+                    </div>
+                </td>
+                <td data-label="Email">{{ m.user.email }}</td>
+                <td data-label="Role"><span class="role-badge">{{ m.role }}</span></td>
+                <td data-label="Management">
+                    <div class="member-position" data-user-id="{{ m.user.id }}" data-group-id="{{ group.id }}"></div>
+                    {% if membership.role == 'owner' and m.user.id != current_user.id %}
+                        {% if m.role == 'member' %}
+                        <form method="POST" action="{{ url_for('group.change_role', group_id=group.id, user_id=m.user.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="role" value="admin">
+                            <button class="btn btn-secondary btn-small" type="submit">Promote to Admin</button>
+                        </form>
+                        {% elif m.role == 'admin' %}
+                        <form method="POST" action="{{ url_for('group.change_role', group_id=group.id, user_id=m.user.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="role" value="member">
+                            <button class="btn btn-secondary btn-small" type="submit">Remove Admin</button>
+                        </form>
+                        {% endif %}
+                    {% else %}
+                    <span class="meta">—</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if membership.role in ['owner', 'admin'] %}
+    <div class="content-card" style="margin-top:18px">
+        <span class="eyebrow">Group management</span>
+        <h2>Access controls</h2>
+        <p class="form-intro">Regenerating a code invalidates the previous one. Invite links can be revoked at any time.</p>
+        <div class="button-row">
+            <form method="POST" action="{{ url_for('group.generate_code', group_id=group.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-secondary" type="submit">Regenerate code</button>
+            </form>
+            {% if invite_url %}
+            <div class="code-display" style="margin:0;flex:1;min-width:260px">
+                <code id="invite-url" data-value="{{ invite_url }}">Active invite link</code>
+                <button class="copy-button" type="button" data-copy="invite-url" aria-label="Copy invite link"><span aria-hidden="true">⧉</span></button>
+            </div>
+            <form method="POST" action="{{ url_for('group.revoke_token', group_id=group.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-danger-soft" type="submit">Revoke Invite Link</button>
+            </form>
+            {% else %}
+            <form method="POST" action="{{ url_for('group.generate_token', group_id=group.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-primary" type="submit">Generate Invite Link</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

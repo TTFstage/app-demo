@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Join group{% endblock %}
+
+{% block content %}
+<section class="form-shell section-soft">
+    <div class="container form-layout">
+        <div class="form-card">
+            <div class="breadcrumb"><a href="{{ url_for('group.index') }}">Groups</a><span>/</span><span>Join</span></div>
+            <span class="eyebrow">Join a crew</span>
+            <h1>Enter your group code</h1>
+            <p class="form-intro">Codes look like <strong>abc-defg-hij</strong>. You can paste one with or without the dashes.</p>
+
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="field">
+                    <label for="code">Group code</label>
+                    <input id="code" type="text" name="code" value="{{ form.code.data or '' }}" placeholder="abc-defg-hij" autocomplete="off" required autofocus>
+                    {% for e in form.code.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">Join group</button>
+                    <a class="btn btn-secondary" href="{{ url_for('group.index') }}">Cancel</a>
+                </div>
+            </form>
+        </div>
+        <aside class="form-aside">
+            <span class="eyebrow">Shared context</span>
+            <h2>Ride together, even across the city.</h2>
+            <p>Group access lets authorised members see live rider positions on the map.</p>
+        </aside>
+    </div>
+</section>
+{% endblock %}

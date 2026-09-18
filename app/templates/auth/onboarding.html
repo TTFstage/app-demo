@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Device setup{% endblock %}
+{% block body_class %}onboarding-page{% endblock %}
+
+{% block content %}
+<section class="onboarding-shell">
+    <div class="onboarding-card">
+        <div class="onboarding-progress"><i></i><i></i><i></i></div>
+        <span class="eyebrow">Welcome to RoR</span><h1>Set up this phone for the road.</h1>
+        <p class="form-intro">RoR asks only when a feature needs access. You can change every choice later in Settings.</p>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="onboarding-choice"><label for="telemetry_enabled"><span><strong>Build my ride history</strong><small>GPS telemetry creates routes and analytics.</small></span><span class="switch-control">{{ form.telemetry_enabled(id='telemetry_enabled') }}<i></i></span></label></div>
+            <div class="onboarding-choice"><label for="fall_detection_enabled"><span><strong>Watch for possible falls</strong><small>Motion analysis runs only while tracking.</small></span><span class="switch-control">{{ form.fall_detection_enabled(id='fall_detection_enabled') }}<i></i></span></label><button class="btn btn-secondary btn-compact" type="button" data-request-motion>Allow motion</button><span id="permission-motion" class="device-state">Check at ride start</span></div>
+            <div class="onboarding-choice"><label for="high_accuracy_gps"><span><strong>Use precise location</strong><small>Higher route accuracy may use more battery.</small></span><span class="switch-control">{{ form.high_accuracy_gps(id='high_accuracy_gps') }}<i></i></span></label><button class="btn btn-secondary btn-compact" type="button" data-request-location>Allow location</button><span id="permission-location" class="device-state">Checking…</span></div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit">Finish setup</button><a class="btn btn-secondary" href="{{ url_for('core.index') }}">Do this later</a></div>
+        </form>
+    </div>
+</section>
+{% endblock %}
+{% block footer %}{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/settings.js') }}"></script>{% endblock %}

@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}Ride{% endblock %}
+
+{% block content %}
+{% if current_user and current_user.is_authenticated %}
+<section class="dashboard-hero">
+    <div class="container">
+        <div class="dashboard-head">
+            <div>
+                <span class="eyebrow">Rider dashboard</span>
+                <h1>Ready when you are, {{ current_user.username }}.</h1>
+                <p>Start a protected ride, keep your team in the loop, and let RoR handle the route data.</p>
+            </div>
+            <a class="btn btn-secondary" href="{{ url_for('map_pages.home') }}">Open rider map <span aria-hidden="true">→</span></a>
+        </div>
+
+        <div class="dashboard-grid">
+            <section id="session-section" class="ride-console" aria-labelledby="ride-console-title">
+                <div class="console-top">
+                    <span class="eyebrow">Live ride</span>
+                    <h2 id="ride-console-title">Track this shift.</h2>
+                    <p>RoR records your route, adjusts sampling to save battery, and monitors for a possible fall while you ride.</p>
+                    <p id="status" class="ride-status" aria-live="polite">Status: Tracking stopped.</p>
+                </div>
+                <div class="live-metrics" aria-label="Live ride metrics">
+                    <div><span>Time</span><strong id="metric-duration">00:00</strong></div>
+                    <div><span>Distance</span><strong id="metric-distance">0.00 km</strong></div>
+                    <div><span>Speed</span><strong id="metric-speed">— km/h</strong></div>
+                    <div><span>GPS</span><strong id="metric-gps">Waiting</strong></div>
+                    <div><span>Battery</span><strong id="metric-battery">—</strong></div>
+                    <div><span>Network</span><strong id="metric-network">Online</strong></div>
+                    <div><span>Queued</span><strong id="metric-queue">0</strong></div>
+                    <div><span>Last sync</span><strong id="metric-sync">—</strong></div>
+                </div>
+                <div class="console-actions">
+                    <button id="btn-start" class="btn btn-white" type="button" onclick="startTracking();">
+                        <span aria-hidden="true">●</span> Start tracking
+                    </button>
+                    <button id="btn-stop" class="btn btn-white" type="button" onclick="stopTracking();">
+                        <span aria-hidden="true">■</span> Finish ride
+                    </button>
+                    <a class="btn btn-secondary" href="{{ url_for('analytics.index') }}">View past rides</a>
+                </div>
+            </section>
+
+            <div class="quick-stack">
+                {% if not preferences or not preferences.onboarding_completed %}
+                <a class="quick-card quick-card-setup" href="{{ url_for('auth.onboarding') }}">
+                    <span class="quick-card-label">One-minute setup</span>
+                    <h3>Check this phone before your first ride.</h3>
+                    <span class="quick-card-arrow" aria-hidden="true">→</span>
+                </a>
+                {% endif %}
+                <a class="quick-card" href="{{ url_for('group.index') }}">
+                    <span class="quick-card-label">Your crew</span>
+                    <h3>See who is out on the road.</h3>
+                    <span class="quick-card-arrow" aria-hidden="true">→</span>
+                </a>
+                <a class="quick-card" href="{{ url_for('auth.list_sos_contacts') }}">
+                    <span class="quick-card-label">Safety setup</span>
+                    <h3>Keep emergency contacts current.</h3>
+                    <span class="quick-card-arrow" aria-hidden="true">→</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="page-section section-soft" id="safety">
+    <div class="container">
+        <div class="section-heading">
+            <div>
+                <span class="eyebrow">Safety by design</span>
+                <h2 class="section-title">Protection that stays in the background.</h2>
+            </div>
+            <p>Motion sensing and GPS work together during an active shift. If RoR detects a possible fall, you get ten seconds to cancel the alert.</p>
+        </div>
+        <div class="feature-grid">
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8"/></svg></span>
+                <h3>Adaptive tracking</h3>
+                <p>High precision while moving, lighter sampling when you stop.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s8-4.5 8-11V5l-8-2-8 2v5c0 6.5 8 11 8 11Z"/><path d="m9 12 2 2 4-5"/></svg></span>
+                <h3>Fall detection</h3>
+                <p>On-device sensor analysis watches for incident patterns during a ride.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6m-3-3h6"/></svg></span>
+                <h3>Your safety circle</h3>
+                <p>Store up to five trusted contacts and order them by priority.</p>
+            </article>
+        </div>
+    </div>
+</section>
+{% else %}
+<section class="hero">
+    <div class="container hero-grid">
+        <div class="hero-copy">
+            <span class="eyebrow">Rider on Road</span>
+            <h1 class="display-title">Own every street. Protect every ride.</h1>
+            <p class="lead">One workspace for urban riders to navigate smarter, stay connected with their crew, and turn every shift into useful insight.</p>
+            <div class="hero-actions">
+                <a class="btn btn-primary" href="{{ url_for('security.register') }}">Start riding</a>
+                <a class="btn btn-secondary" href="{{ url_for('security.login') }}">I have an account</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <img src="{{ url_for('static', filename='images/rider-route.svg') }}" alt="Illustration of an urban rider crossing the city">
+            <div class="hero-float">
+                <div class="hero-float-label">Road status</div>
+                <div class="hero-float-row">
+                    <span class="live-dot" aria-hidden="true"></span>
+                    <div><strong>Ready to ride</strong><span>GPS and safety tools in one place</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="page-section section-soft" id="safety">
+    <div class="container">
+        <div class="section-heading">
+            <div>
+                <span class="eyebrow">Everything for the road</span>
+                <h2 class="section-title">Built around the shift, not the spreadsheet.</h2>
+            </div>
+            <p>RoR connects navigation, team visibility and ride analytics without getting between you and the city.</p>
+        </div>
+        <div class="feature-grid">
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3 11 8-8 10 10-8 8L3 11Z"/><path d="m8 8 8 8M14 6l4-4 4 4-4 4"/></svg></span>
+                <h3>Navigate the city</h3>
+                <p>Plan cycling routes around fountains, repair points, parking and toilets.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s8-4.5 8-11V5l-8-2-8 2v5c0 6.5 8 11 8 11Z"/><path d="m9 12 2 2 4-5"/></svg></span>
+                <h3>Ride with backup</h3>
+                <p>Fall detection, a visible countdown and emergency contacts add a safety layer.</p>
+            </article>
+            <article class="feature-card">
+                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 16 4-5 3 3 5-7"/></svg></span>
+                <h3>Know your work</h3>
+                <p>Review route, distance, duration, speed and elevation from each completed ride.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="page-section section-dark" id="how-it-works">
+    <div class="container">
+        <div class="section-heading">
+            <div>
+                <span class="eyebrow">How it works</span>
+                <h2 class="section-title">From first tap to final kilometre.</h2>
+            </div>
+            <p>A focused flow keeps the technology out of your way.</p>
+        </div>
+        <div class="steps-grid">
+            <article class="step"><span class="step-number">01</span><h3>Start your shift</h3><p>One tap starts GPS and protected telemetry for your account.</p></article>
+            <article class="step"><span class="step-number">02</span><h3>Move with context</h3><p>Use the rider map and keep authorised group members visible.</p></article>
+            <article class="step"><span class="step-number">03</span><h3>Review the route</h3><p>Your completed GPX becomes a clear, measurable ride history.</p></article>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<div id="crash-alert" role="alertdialog" aria-modal="true" aria-labelledby="crash-title">
+    <span class="eyebrow">Safety alert</span>
+    <h1 id="crash-title">Possible fall detected</h1>
+    <p>RoR will record an SOS event in:</p>
+    <div id="timer-display">10</div>
+    <button class="btn-cancel" type="button" onclick="cancelSOS()">I'm okay — cancel</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.RIDER_ID = {{ current_user.id if current_user.is_authenticated else 'null' }};
+window.ROR_SETTINGS = {
+    telemetryEnabled: {{ (preferences.telemetry_enabled if preferences else true)|tojson }},
+    fallDetectionEnabled: {{ (preferences.fall_detection_enabled if preferences else true)|tojson }},
+    highAccuracyGps: {{ (preferences.high_accuracy_gps if preferences else true)|tojson }},
+    browserNotificationsEnabled: {{ (preferences.browser_notifications_enabled if preferences else false)|tojson }}
+};
+</script>
+<script src="{{ url_for('static', filename='js/SignalProcessor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/HeadingEstimator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/FallDetector.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}

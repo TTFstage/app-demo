@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if contact else 'Add' }} SOS contact{% endblock %}
+
+{% block content %}
+<section class="form-shell section-soft">
+    <div class="container form-layout">
+        <div class="form-card">
+            <div class="breadcrumb"><a href="{{ url_for('auth.list_sos_contacts') }}">SOS contacts</a><span>/</span><span>{{ 'Edit' if contact else 'Add' }}</span></div>
+            <span class="eyebrow">Safety circle</span>
+            <h1>{{ 'Update contact' if contact else 'Add a trusted contact' }}</h1>
+            <p class="form-intro">Keep the details clear and choose how high this person should appear in your priority order.</p>
+
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="field-row">
+                    <div class="field">
+                        <label for="name">Name</label>
+                        <input id="name" type="text" name="name" value="{{ form.name.data or '' }}" autocomplete="name" placeholder="Contact name" required autofocus>
+                        {% for e in form.name.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </div>
+                    <div class="field">
+                        <label for="phone">Phone</label>
+                        <input id="phone" type="tel" name="phone" value="{{ form.phone.data or '' }}" autocomplete="tel" placeholder="+39 ..." required>
+                        {% for e in form.phone.errors %}<span class="field-error">{{ e }}</span>{% endfor %}
+                    </div>
+                </div>
+
+                <div class="field-row">
+                    <div class="field">
+                        <label for="relationship">Relationship</label>
+                        <select id="relationship" name="relationship">
+                            <option value="">Select relationship</option>
+                            <option value="Spouse/Partner" {% if form.relationship.data == 'Spouse/Partner' %}selected{% endif %}>Spouse / partner</option>
+                            <option value="Parent" {% if form.relationship.data == 'Parent' %}selected{% endif %}>Parent</option>
+                            <option value="Sibling" {% if form.relationship.data == 'Sibling' %}selected{% endif %}>Sibling</option>
+                            <option value="Child" {% if form.relationship.data == 'Child' %}selected{% endif %}>Child</option>
+                            <option value="Friend" {% if form.relationship.data == 'Friend' %}selected{% endif %}>Friend</option>
+                            <option value="Colleague" {% if form.relationship.data == 'Colleague' %}selected{% endif %}>Colleague</option>
+                            <option value="Other" {% if form.relationship.data == 'Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="priority">Priority</label>
+                        <select id="priority" name="priority">
+                            <option value="0" {% if form.priority.data == 0 %}selected{% endif %}>Low</option>
+                            <option value="1" {% if form.priority.data == 1 %}selected{% endif %}>Medium</option>
+                            <option value="2" {% if form.priority.data == 2 %}selected{% endif %}>High</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary" type="submit">{{ 'Save changes' if contact else 'Add contact' }}</button>
+                    <a class="btn btn-secondary" href="{{ url_for('auth.list_sos_contacts') }}">Cancel</a>
+                </div>
+            </form>
+        </div>
+        <aside class="form-aside">
+            <span class="eyebrow">Good to know</span>
+            <h2>Put the most reachable person first.</h2>
+            <p>Priority helps you keep your emergency list ordered when seconds matter.</p>
+        </aside>
+    </div>
+</section>
+{% endblock %}

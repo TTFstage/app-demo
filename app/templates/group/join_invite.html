@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Invite · {{ group.name }}{% endblock %}
+
+{% block content %}
+<section class="form-shell section-soft">
+    <div class="narrow-container">
+        <div class="form-card">
+            <span class="eyebrow">Group invitation</span>
+            <h1>Join {{ group.name }}</h1>
+            <p class="form-intro">{{ group.description or 'You have been invited to join this private rider group.' }}</p>
+            <div class="button-row" style="margin-bottom:28px">
+                <span class="role-badge">{{ group.members|length }} member{{ '' if group.members|length == 1 else 's' }}</span>
+                <span class="role-badge">Member access</span>
+            </div>
+            <form method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-primary btn-block" type="submit">Accept Invite</button>
+            </form>
+            <p class="auth-switch"><a href="{{ url_for('group.index') }}">Back to my groups</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}

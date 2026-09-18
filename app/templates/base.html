@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ current_user.preference.appearance if current_user and current_user.is_authenticated and current_user.preference else 'system' }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="RoR keeps urban riders moving, connected and protected.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>{% block title %}RoR{% endblock %} · Rider on Road</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+    <link rel="icon" href="{{ url_for('static', filename='images/icon.svg') }}" type="image/svg+xml">
+    <script>
+    (function () {
+        var root = document.documentElement;
+        var theme = root.dataset.theme || 'system';
+        root.dataset.resolvedTheme = theme === 'system'
+            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : theme;
+    }());
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <header class="site-header">
+        <nav class="nav-shell" aria-label="Primary navigation">
+            <a class="brand" href="{{ url_for('core.index') }}" aria-label="RoR home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 32 32" role="img"><path d="M7 24V8h9.2c4.5 0 7.3 2.4 7.3 6 0 2.5-1.4 4.4-3.8 5.3L25 24h-5.3l-4.5-4.1h-3.5V24H7Zm4.7-8h4.1c1.9 0 3-.7 3-2s-1.1-2-3-2h-4.1v4Z"/></svg>
+                </span>
+                <span>RoR</span>
+            </a>
+
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="nav-menu" aria-label="Open navigation">
+                <span></span><span></span><span></span>
+            </button>
+
+            <div class="nav-menu" id="nav-menu">
+                {% if current_user and current_user.is_authenticated %}
+                <div class="nav-links">
+                    <a class="nav-pill {{ 'is-active' if request.endpoint == 'core.index' else '' }}" href="{{ url_for('core.index') }}">Ride</a>
+                    <a class="nav-pill {{ 'is-active' if request.blueprint == 'map_pages' else '' }}" href="{{ url_for('map_pages.home') }}">Map</a>
+                    <a class="nav-pill {{ 'is-active' if request.blueprint == 'analytics' else '' }}" href="{{ url_for('analytics.index') }}">Analytics</a>
+                    <a class="nav-pill {{ 'is-active' if request.blueprint in ['other', 'auth', 'group'] else '' }}" href="{{ url_for('other.index') }}">Workspace</a>
+                </div>
+                <a class="nav-account" href="{{ url_for('auth.me') }}" aria-label="Open profile for {{ current_user.username }}">
+                    <span class="avatar">{{ current_user.username[:1]|upper }}</span>
+                    <span>{{ current_user.username }}</span>
+                </a>
+                {% else %}
+                <div class="nav-links nav-links-public">
+                    <a class="nav-text-link" href="{{ url_for('core.index') }}#how-it-works">How it works</a>
+                    <a class="nav-text-link" href="{{ url_for('core.index') }}#safety">Safety</a>
+                </div>
+                <div class="nav-actions">
+                    <a class="btn btn-secondary btn-compact" href="{{ url_for('security.login') }}">Log in</a>
+                    <a class="btn btn-primary btn-compact" href="{{ url_for('security.register') }}">Get started</a>
+                </div>
+                {% endif %}
+            </div>
+        </nav>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-stack" aria-live="polite" aria-atomic="true">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}" role="status">
+                <span class="flash-icon" aria-hidden="true">{% if category == 'success' %}✓{% elif category == 'error' %}!{% else %}i{% endif %}</span>
+                <span>{{ message }}</span>
+                <button class="flash-close" type="button" aria-label="Dismiss message">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+
+    <main id="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+    <footer class="site-footer">
+        <div class="footer-shell">
+            <div class="footer-lead">
+                <a class="brand brand-inverse" href="{{ url_for('core.index') }}">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg viewBox="0 0 32 32"><path d="M7 24V8h9.2c4.5 0 7.3 2.4 7.3 6 0 2.5-1.4 4.4-3.8 5.3L25 24h-5.3l-4.5-4.1h-3.5V24H7Zm4.7-8h4.1c1.9 0 3-.7 3-2s-1.1-2-3-2h-4.1v4Z"/></svg>
+                    </span>
+                    <span>RoR</span>
+                </a>
+                <p>Built for the people who keep cities moving.</p>
+            </div>
+            <div class="footer-links">
+                <div>
+                    <h2>Move</h2>
+                    <a href="{{ url_for('core.index') }}">Ride tracking</a>
+                    {% if current_user and current_user.is_authenticated %}<a href="{{ url_for('map_pages.home') }}">Rider map</a>{% endif %}
+                </div>
+                <div>
+                    <h2>Connect</h2>
+                    {% if current_user and current_user.is_authenticated %}
+                    <a href="{{ url_for('group.index') }}">Groups</a>
+                    <a href="{{ url_for('analytics.index') }}">Analytics</a>
+                    {% else %}
+                    <a href="{{ url_for('security.login') }}">Log in</a>
+                    <a href="{{ url_for('security.register') }}">Create account</a>
+                    {% endif %}
+                </div>
+                <div>
+                    <h2>Safety</h2>
+                    {% if current_user and current_user.is_authenticated %}<a href="{{ url_for('auth.list_sos_contacts') }}">SOS contacts</a>{% endif %}
+                    <a href="{{ url_for('core.index') }}#safety">Fall detection</a>
+                </div>
+                {% if current_user and current_user.is_authenticated %}
+                <div>
+                    <h2>Account</h2>
+                    <a href="{{ url_for('auth.settings') }}">Settings</a>
+                    <a href="{{ url_for('auth.me') }}">Profile</a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="footer-bottom">
+                <span>© 2026 Rider on Road</span>
+                <span>Privacy-first telemetry</span>
+            </div>
+        </div>
+    </footer>
+    {% endblock %}
+
+    <script src="{{ url_for('static', filename='map/js/nav.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}" defer></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Edit profile{% endblock %}
+
+{% block content %}
+<section class="form-shell section-soft">
+    <div class="container form-layout">
+        <div class="form-card">
+            <div class="breadcrumb"><a href="{{ url_for('auth.me') }}">Profile</a><span>/</span><span>Edit</span></div>
+            <span class="eyebrow">Account</span>
+            <h1>Keep your details current.</h1>
+            <p class="form-intro">These details identify you across rides, groups and safety alerts. Your tax ID cannot be edited here.</p>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="field-row">
+                    <div class="field"><label for="full_name">Full name</label>{{ form.full_name(id='full_name', autocomplete='name') }}{% for e in form.full_name.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+                    <div class="field"><label for="username">Username</label>{{ form.username(id='username', autocomplete='username') }}{% for e in form.username.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+                </div>
+                <div class="field-row">
+                    <div class="field"><label for="email">Email</label>{{ form.email(id='email', autocomplete='email') }}{% for e in form.email.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+                    <div class="field"><label for="phone_number">Phone</label>{{ form.phone_number(id='phone_number', autocomplete='tel', type='tel') }}{% for e in form.phone_number.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+                </div>
+                <div class="field-row">
+                    <div class="field"><label for="date_of_birth">Date of birth</label>{{ form.date_of_birth(id='date_of_birth') }}{% for e in form.date_of_birth.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+                    <div class="field"><label for="gender">Gender</label>{{ form.gender(id='gender') }}{% for e in form.gender.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+                </div>
+                <div class="field"><label for="birth_city_country">City or country of birth</label>{{ form.birth_city_country(id='birth_city_country', autocomplete='country-name') }}{% for e in form.birth_city_country.errors %}<span class="field-error">{{ e }}</span>{% endfor %}</div>
+                <div class="form-actions"><button class="btn btn-primary" type="submit">Save profile</button><a class="btn btn-secondary" href="{{ url_for('auth.me') }}">Cancel</a></div>
+            </form>
+        </div>
+        <aside class="form-aside"><span class="eyebrow">Private by default</span><h2>Your identity stays attached to your account.</h2><p>Only the fields required for the features you use are shared with the rest of the app.</p></aside>
+    </div>
+</section>
+{% endblock %}

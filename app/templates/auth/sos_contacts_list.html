@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}SOS contacts{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-row">
+        <div>
+            <div class="breadcrumb"><a href="{{ url_for('other.index') }}">Workspace</a><span>/</span><span>SOS contacts</span></div>
+            <h1>Your safety circle.</h1>
+            <p>Add up to five people RoR should prioritise when you need help.</p>
+        </div>
+        <a class="btn btn-primary" href="{{ url_for('auth.add_sos_contact') }}">Add contact</a>
+    </div>
+</section>
+
+<section class="container page-section-sm">
+    {% if contacts %}
+    <div class="data-table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Contact</th><th>Phone</th><th>Relationship</th><th>Priority</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for contact in contacts %}
+            <tr>
+                <td>
+                    <div class="contact-main">
+                        <span class="contact-avatar">{{ contact.name[:1]|upper }}</span>
+                        <strong>{{ contact.name }}</strong>
+                    </div>
+                </td>
+                <td data-label="Phone">{{ contact.phone }}</td>
+                <td data-label="Relationship">{{ contact.relationship or 'Not specified' }}</td>
+                <td data-label="Priority"><span class="priority-badge">{% if contact.priority == 2 %}High{% elif contact.priority == 1 %}Medium{% else %}Low{% endif %}</span></td>
+                <td data-label="Actions">
+                    <div class="button-row">
+                        <a class="btn btn-secondary btn-small" href="{{ url_for('auth.edit_sos_contact', contact_id=contact.id) }}">Edit</a>
+                        <form method="POST" action="{{ url_for('auth.delete_sos_contact', contact_id=contact.id) }}" onsubmit="return confirm('Remove this SOS contact?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-danger-soft btn-small" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon" aria-hidden="true">+</div>
+        <h2>No SOS contacts yet</h2>
+        <p>Build your safety circle before your next ride. You can add a partner, relative, friend or colleague.</p>
+        <a class="btn btn-primary" href="{{ url_for('auth.add_sos_contact') }}">Add your first contact</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

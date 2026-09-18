@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Groups{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container page-hero-row">
+        <div>
+            <div class="breadcrumb"><a href="{{ url_for('other.index') }}">Workspace</a><span>/</span><span>Groups</span></div>
+            <h1>Your crews.</h1>
+            <p>Coordinate private rider groups and share live road context with the people you trust.</p>
+        </div>
+        <div class="button-row">
+            <a class="btn btn-secondary" href="{{ url_for('group.join') }}">Join with code</a>
+            <a class="btn btn-primary" href="{{ url_for('group.create') }}">Create group</a>
+        </div>
+    </div>
+</section>
+
+<section class="container page-section-sm">
+    {% if memberships %}
+    <div class="card-grid">
+        {% for m in memberships %}
+        <a class="list-card" href="{{ url_for('group.detail', group_id=m.group.id) }}">
+            <div>
+                <span class="role-badge">{{ m.role }}</span>
+                <h2>{{ m.group.name }}</h2>
+                <p>{{ m.group.description or 'Private rider group' }}</p>
+            </div>
+            <span class="list-arrow" aria-hidden="true">→</span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon" aria-hidden="true">◎</div>
+        <h2>No groups yet</h2>
+        <p>Create a crew for your team or enter a group code someone shared with you.</p>
+        <div class="button-row" style="justify-content:center">
+            <a class="btn btn-primary" href="{{ url_for('group.create') }}">Create a group</a>
+            <a class="btn btn-secondary" href="{{ url_for('group.join') }}">Join a group</a>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

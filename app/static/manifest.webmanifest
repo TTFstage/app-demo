@@ -1,0 +1,19 @@
+{
+  "name": "Rider on Road",
+  "short_name": "RoR",
+  "description": "Ride tracking, navigation and safety tools for urban riders.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/static/images/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

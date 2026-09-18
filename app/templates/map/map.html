@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Rider map{% endblock %}
+{% block body_class %}map-page{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+{% endblock %}
+
+{% block content %}
+<section class="map-workspace">
+    <div class="map-heading">
+        <div>
+            <span class="eyebrow">{% if group_id and members %}Live group map{% else %}Rider map{% endif %}</span>
+            <h1>{% if group_id and members %}Your crew, on the move.{% else %}Find a better way through.{% endif %}</h1>
+            <p>{% if group_id and members %}Authorised live positions update while group members are riding.{% else %}Plan around useful stops and build a cycling route that works for your shift.{% endif %}</p>
+        </div>
+        <button id="nav-toggle" class="btn btn-primary" type="button" aria-expanded="false" aria-controls="nav-panel">Plan a route</button>
+    </div>
+
+    <div class="map-toolbar">
+        <div id="overlay-selector" class="overlay-selector" aria-label="Map points of interest">
+            <label class="filter-chip"><input type="checkbox" data-overlay="stations" {{ 'checked' if 'stations' in default_overlays else '' }}><span><i class="filter-dot"></i>Fountains</span></label>
+            <label class="filter-chip"><input type="checkbox" data-overlay="bicycle_repair" {{ 'checked' if 'bicycle_repair' in default_overlays else '' }}><span><i class="filter-dot"></i>Repair</span></label>
+            <label class="filter-chip"><input type="checkbox" data-overlay="toilets" {{ 'checked' if 'toilets' in default_overlays else '' }}><span><i class="filter-dot"></i>Toilets</span></label>
+            <label class="filter-chip"><input type="checkbox" data-overlay="bicycleParkings" {{ 'checked' if 'bicycleParkings' in default_overlays else '' }}><span><i class="filter-dot"></i>Bike parking</span></label>
+        </div>
+        {% if group_id and members %}
+        <a class="btn btn-secondary btn-compact" href="{{ url_for('group.detail', group_id=group_id) }}">Back to group</a>
+        {% endif %}
+    </div>
+
+    <div class="map-canvas-wrap">
+        <div id="zoom-hint" class="zoom-hint" hidden>Zoom in to reveal nearby rider stops</div>
+
+        <aside id="nav-panel" class="nav-panel hidden" aria-label="Cycling route planner">
+            <div class="nav-panel-head"><h2>Plan your route</h2></div>
+            <div class="nav-section">
+                <strong>Waypoints</strong>
+                <div id="wp-list"></div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-row">
+                    <input id="wp-search-input" type="search" placeholder="Search address or place" autocomplete="off">
+                    <button id="wp-search-btn" title="Add address" aria-label="Add searched address">+</button>
+                </div>
+                <div class="nav-row nav-row-wrap" style="margin-top:8px">
+                    <button id="use-location-btn" class="nav-btn-sec" type="button">Use my location</button>
+                    <button id="map-click-add-btn" class="nav-btn-sec" type="button">Select on map</button>
+                </div>
+            </div>
+            <div class="nav-section">
+                <strong>Add a useful stop</strong>
+                <div class="nav-row nav-row-wrap">
+                    <button id="add-nearest-fountain-btn" class="nav-btn-sec" type="button" disabled>Nearest fountain</button>
+                    <button id="add-nearest-parking-btn" class="nav-btn-sec" type="button" disabled>Nearest parking</button>
+                </div>
+            </div>
+            <div class="nav-section">
+                <div class="nav-row">
+                    <button id="calc-route-btn" class="nav-btn-primary" type="button" disabled>Calculate route</button>
+                    <button id="clear-route-btn" class="nav-btn-danger" type="button">Clear</button>
+                </div>
+                <p id="nav-msg" class="nav-msg" aria-live="polite"></p>
+            </div>
+        </aside>
+
+        <div id="map" aria-label="Interactive rider map"></div>
+    </div>
+</section>
+{% endblock %}
+
+{% block footer %}{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="{{ url_for('static', filename='map/js/geohash.js') }}"></script>
+<script src="{{ url_for('static', filename='map/js/map.js') }}"></script>
+{% if group_id and members %}
+<script>
+(function () {
+    const groupId = {{ group_id }};
+    const members = [
+        {% for m in members %}
+        { id: {{ m.user_id }}, username: {{ m.user.username|tojson }} }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    const memberMarkers = {};
+
+    function updateMemberPositions() {
+        if (!window.map) return;
+        members.forEach((member) => {
+            fetch(`/groups/${groupId}/member/${member.id}/position`)
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.available && Number.isFinite(data.lat) && Number.isFinite(data.lon)) {
+                        if (!memberMarkers[member.id]) {
+                            memberMarkers[member.id] = L.marker([data.lat, data.lon], { title: member.username })
+                                .bindPopup(`<strong>${member.username}</strong><br>Live rider`)
+                                .addTo(window.map);
+                        } else {
+                            memberMarkers[member.id].setLatLng([data.lat, data.lon]);
+                        }
+                    }
+                })
+                .catch((error) => console.error("Error fetching group position:", error));
+        });
+    }
+    setInterval(updateMemberPositions, 8000);
+    setTimeout(updateMemberPositions, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}
