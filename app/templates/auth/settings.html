@@ -1,54 +1,64 @@
 {% extends "base.html" %}
-{% block title %}Settings{% endblock %}
+{% block title %}{{ t('settings.title') }}{% endblock %}
 
 {% block content %}
 <section class="page-hero settings-hero">
-    <div class="container"><div class="breadcrumb"><a href="{{ url_for('other.index') }}">Workspace</a><span>/</span><span>Settings</span></div><span class="eyebrow">Settings</span><h1>Make RoR work your way.</h1><p>Control what the app records, how safety tools behave and what your phone can provide.</p></div>
+    <div class="container"><span class="eyebrow">{{ t('settings.eyebrow') }}</span><h1>{{ t('settings.heading') }}</h1><p>{{ t('settings.intro') }}</p></div>
 </section>
 
 <section class="container settings-layout">
     <form class="settings-main" method="POST">
         {{ form.hidden_tag() }}
         <section class="settings-section" id="privacy">
-            <div class="settings-section-head"><div><span class="eyebrow">Privacy</span><h2>Ride data</h2></div><p>Choose which signals RoR may process during a shift.</p></div>
-            <label class="setting-row" for="telemetry_enabled"><span><strong>Ride telemetry</strong><small>Send GPS points required to build your route and analytics.</small></span><span class="switch-control">{{ form.telemetry_enabled(id='telemetry_enabled') }}<i></i></span></label>
-            <label class="setting-row" for="fall_detection_enabled"><span><strong>Fall detection</strong><small>Analyse motion locally during an active ride and start the safety countdown.</small></span><span class="switch-control">{{ form.fall_detection_enabled(id='fall_detection_enabled') }}<i></i></span></label>
+            <div class="settings-section-head"><div><span class="eyebrow">{{ t('settings.privacy') }}</span><h2>{{ t('settings.ride_data') }}</h2></div><p>{{ t('settings.ride_data_help') }}</p></div>
+            <label class="setting-row" for="telemetry_enabled"><span><strong>{{ t('settings.telemetry') }}</strong><small>{{ t('settings.telemetry_help') }}</small></span><span class="switch-control">{{ form.telemetry_enabled(id='telemetry_enabled') }}<i></i></span></label>
+            <label class="setting-row" for="fall_detection_enabled"><span><strong>{{ t('settings.fall_detection') }}</strong><small>{{ t('settings.fall_detection_help') }}</small></span><span class="switch-control">{{ form.fall_detection_enabled(id='fall_detection_enabled') }}<i></i></span></label>
         </section>
 
         <section class="settings-section" id="safety-settings">
-            <div class="settings-section-head"><div><span class="eyebrow">Safety</span><h2>SOS delivery</h2></div><span class="status-badge {{ 'status-good' if webhook_configured else 'status-warn' }}">{{ 'Provider connected' if webhook_configured else 'Provider not connected' }}</span></div>
-            <label class="setting-row" for="sos_notifications_enabled"><span><strong>Send SOS notifications</strong><small>Relay an alert to the configured provider and your priority contacts.</small></span><span class="switch-control">{{ form.sos_notifications_enabled(id='sos_notifications_enabled') }}<i></i></span></label>
-            <a class="setting-row setting-link" href="{{ url_for('auth.list_sos_contacts') }}"><span><strong>Emergency contacts</strong><small>Review names, phone numbers and priority.</small></span><span aria-hidden="true">→</span></a>
+            <div class="settings-section-head"><div><span class="eyebrow">{{ t('settings.safety') }}</span><h2>{{ t('settings.sos_delivery') }}</h2></div><span class="status-badge {{ 'status-good' if webhook_configured else 'status-warn' }}">{{ t('settings.provider_connected') if webhook_configured else t('settings.provider_missing') }}</span></div>
+            <label class="setting-row" for="sos_notifications_enabled"><span><strong>{{ t('settings.sos_notifications') }}</strong><small>{{ t('settings.sos_help') }}</small></span><span class="switch-control">{{ form.sos_notifications_enabled(id='sos_notifications_enabled') }}<i></i></span></label>
+            <a class="setting-row setting-link" href="{{ url_for('auth.list_sos_contacts') }}"><span><strong>{{ t('settings.contacts') }}</strong><small>{{ t('settings.contacts_help') }}</small></span><span aria-hidden="true">→</span></a>
         </section>
 
         <section class="settings-section" id="device">
-            <div class="settings-section-head"><div><span class="eyebrow">This phone</span><h2>Permissions</h2></div><p>Permission prompts only open after you tap.</p></div>
+            <div class="settings-section-head"><div><span class="eyebrow">{{ t('settings.phone') }}</span><h2>{{ t('settings.permissions') }}</h2></div><p>{{ t('settings.permissions_help') }}</p></div>
             <div class="device-grid">
-                <div class="device-card"><strong>Location</strong><span id="permission-location" class="device-state">Checking…</span><button class="btn btn-secondary btn-compact" type="button" data-request-location>Allow location</button></div>
-                <div class="device-card"><strong>Motion</strong><span id="permission-motion" class="device-state">Check at ride start</span><button class="btn btn-secondary btn-compact" type="button" data-request-motion>Allow motion</button></div>
-                <div class="device-card"><strong>Notifications</strong><span id="permission-notifications" class="device-state">Checking…</span><button class="btn btn-secondary btn-compact" type="button" data-request-notifications>Allow notifications</button></div>
-                <div class="device-card"><strong>Connection</strong><span id="connection-state" class="device-state">Checking…</span><span class="device-note">Offline rides queue on this phone.</span></div>
+                <div class="device-card"><strong>{{ t('settings.location') }}</strong><span id="permission-location" class="device-state">{{ t('settings.checking') }}</span><button class="btn btn-secondary btn-compact" type="button" data-request-location>{{ t('settings.allow_location') }}</button></div>
+                <div class="device-card"><strong>{{ t('settings.motion') }}</strong><span id="permission-motion" class="device-state">{{ t('settings.check_ride_start') }}</span><button class="btn btn-secondary btn-compact" type="button" data-request-motion>{{ t('settings.allow_motion') }}</button></div>
+                <div class="device-card"><strong>{{ t('settings.notifications') }}</strong><span id="permission-notifications" class="device-state">{{ t('settings.checking') }}</span><button class="btn btn-secondary btn-compact" type="button" data-request-notifications>{{ t('settings.allow_notifications') }}</button></div>
+                <div class="device-card"><strong>{{ t('settings.connection') }}</strong><span id="connection-state" class="device-state">{{ t('settings.checking') }}</span><span class="device-note">{{ t('settings.offline_queue') }}</span></div>
             </div>
-            <label class="setting-row" for="browser_notifications_enabled"><span><strong>Browser notifications</strong><small>Use notifications on this phone when permission is available.</small></span><span class="switch-control">{{ form.browser_notifications_enabled(id='browser_notifications_enabled') }}<i></i></span></label>
-            <label class="setting-row" for="high_accuracy_gps"><span><strong>High accuracy GPS</strong><small>Improve route precision with a higher battery cost.</small></span><span class="switch-control">{{ form.high_accuracy_gps(id='high_accuracy_gps') }}<i></i></span></label>
+            <label class="setting-row" for="browser_notifications_enabled"><span><strong>{{ t('settings.browser_notifications') }}</strong><small>{{ t('settings.browser_notifications_help') }}</small></span><span class="switch-control">{{ form.browser_notifications_enabled(id='browser_notifications_enabled') }}<i></i></span></label>
+            <label class="setting-row" for="high_accuracy_gps"><span><strong>{{ t('settings.high_accuracy') }}</strong><small>{{ t('settings.high_accuracy_help') }}</small></span><span class="switch-control">{{ form.high_accuracy_gps(id='high_accuracy_gps') }}<i></i></span></label>
         </section>
 
         <section class="settings-section" id="map-settings">
-            <div class="settings-section-head"><div><span class="eyebrow">Map & display</span><h2>Defaults</h2></div></div>
-            <div class="setting-row"><label for="map_default_overlays"><strong>Map detail</strong><small>Points of interest visible when the rider map opens.</small></label>{{ form.map_default_overlays(id='map_default_overlays', class='select-control') }}</div>
-            <div class="setting-row"><label for="appearance"><strong>Appearance</strong><small>Use light, dark or your phone setting.</small></label>{{ form.appearance(id='appearance', class='select-control') }}</div>
-            <div class="setting-row"><span><strong>Language</strong><small>The current interface language.</small></span><span class="setting-value">English</span></div>
+            <div class="settings-section-head"><div><span class="eyebrow">{{ t('settings.map_display') }}</span><h2>{{ t('settings.defaults') }}</h2></div></div>
+            <div class="setting-row"><label for="map_default_overlays"><strong>{{ t('settings.map_detail') }}</strong><small>{{ t('settings.map_detail_help') }}</small></label>{{ form.map_default_overlays(id='map_default_overlays', class='select-control') }}</div>
+            <div class="setting-row"><label for="appearance"><strong>{{ t('settings.appearance') }}</strong><small>{{ t('settings.appearance_help') }}</small></label>{{ form.appearance(id='appearance', class='select-control') }}</div>
+            <div class="setting-row"><label for="language"><strong>{{ t('settings.language') }}</strong><small>{{ t('settings.language_help') }}</small></label>{{ form.language(id='language', class='select-control') }}</div>
         </section>
 
-        <div class="settings-save"><button class="btn btn-primary" type="submit">Save settings</button><span>Changes apply to your next ride.</span></div>
+        <div class="settings-save"><button class="btn btn-primary" type="submit">{{ t('settings.save') }}</button><span>{{ t('settings.apply_next') }}</span></div>
     </form>
 
     <aside class="settings-side">
-        <div class="settings-side-card"><span class="eyebrow">Account</span><a href="{{ url_for('auth.edit_profile') }}">Edit profile <span>→</span></a><a href="{{ url_for('auth.change_password') }}">Change password <span>→</span></a><a href="{{ url_for('auth.onboarding') }}">Run device setup <span>→</span></a></div>
-        <div class="settings-side-card"><span class="eyebrow">Install</span><h2>Keep RoR on your home screen.</h2><p>Install the web app for a full-screen mobile experience and offline shell.</p><button class="btn btn-primary btn-block" type="button" data-install-app disabled>Install RoR</button><span id="install-state" class="device-note">Install availability depends on this browser.</span></div>
-        <div class="settings-side-card"><span class="eyebrow">App</span><p><strong>Rider on Road</strong><br>Web app · version 1.0</p><p class="device-note">For emergencies, contact local emergency services directly. RoR is an additional safety layer.</p></div>
+        <div class="settings-side-card"><span class="eyebrow">{{ t('settings.account') }}</span><a href="{{ url_for('auth.edit_profile') }}">{{ t('settings.edit_profile') }} <span>→</span></a><a href="{{ url_for('auth.change_password') }}">{{ t('settings.change_password') }} <span>→</span></a><a href="{{ url_for('auth.onboarding') }}">{{ t('settings.device_setup') }} <span>→</span></a></div>
+        <div class="settings-side-card"><span class="eyebrow">{{ t('settings.install') }}</span><h2>{{ t('settings.install_heading') }}</h2><p>{{ t('settings.install_help') }}</p><button class="btn btn-primary btn-block" type="button" data-install-app disabled>{{ t('settings.install_button') }}</button><span id="install-state" class="device-note">{{ t('settings.install_availability') }}</span></div>
+        <div class="settings-side-card"><span class="eyebrow">{{ t('settings.app') }}</span><p><strong>Rider on Road</strong><br>Web app · version 1.0</p><p class="device-note">{{ t('settings.emergency_note') }}</p></div>
     </aside>
 </section>
 {% endblock %}
 
-{% block scripts %}<script src="{{ url_for('static', filename='js/settings.js') }}"></script>{% endblock %}
+{% block scripts %}
+<script>
+window.ROR_SETTINGS_COPY = {
+    allowed: {{ t('settings.allowed')|tojson }}, blocked: {{ t('settings.blocked')|tojson }},
+    notDecided: {{ t('settings.not_decided')|tojson }}, unavailable: {{ t('settings.unavailable')|tojson }},
+    online: {{ t('settings.online')|tojson }}, offlineActive: {{ t('settings.offline_active')|tojson }},
+    askAtStart: {{ t('settings.ask_ride_start')|tojson }}, requesting: {{ t('settings.requesting')|tojson }}
+};
+</script>
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

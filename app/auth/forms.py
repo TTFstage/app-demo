@@ -261,6 +261,14 @@ class PreferencesForm(FlaskForm):
             ('dark', 'Dark'),
         ],
     )
+    language = SelectField(
+        'Language',
+        choices=[
+            ('en', 'English'),
+            ('it', 'Italiano'),
+            ('es', 'Español'),
+        ],
+    )
 
 
 class OnboardingForm(FlaskForm):

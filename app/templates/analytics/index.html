@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ride analytics{% endblock %}
+{% block title %}{{ t('analytics.title') }}{% endblock %}
 
 {% block head %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
@@ -8,18 +8,18 @@
 {% block content %}
 <section class="page-hero">
     <div class="container">
-        <span class="eyebrow">Ride analytics</span>
-        <h1>Every shift tells a story.</h1>
-        <p>Select a completed route to review distance, duration, speed and elevation in one clear view.</p>
+        <span class="eyebrow">{{ t('analytics.title') }}</span>
+        <h1>{{ t('analytics.heading') }}</h1>
+        <p>{{ t('analytics.intro') }}</p>
     </div>
 </section>
 
 <section class="container analytics-grid">
     <div class="analytics-map-card">
         <div class="field">
-            <label for="shiftSelect">Completed ride</label>
+            <label for="shiftSelect">{{ t('analytics.completed') }}</label>
             <select id="shiftSelect" class="select-control" {% if not shifts %}disabled{% endif %}>
-                <option value="" disabled selected>{% if shifts %}Choose a ride{% else %}No completed rides yet{% endif %}</option>
+                <option value="" disabled selected>{% if shifts %}{{ t('analytics.choose') }}{% else %}{{ t('analytics.empty') }}{% endif %}</option>
                 {% for shift in shifts %}
                 <option value="{{ shift.id }}"
                         data-url="{{ url_for('core.download_gpx', shift_id=shift.id) }}"

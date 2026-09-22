@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Rider map{% endblock %}
+{% block title %}{{ t('map.title') }}{% endblock %}
 {% block body_class %}map-page{% endblock %}
 
 {% block head %}
@@ -12,19 +12,19 @@
 <section class="map-workspace">
     <div class="map-heading">
         <div>
-            <span class="eyebrow">{% if group_id and members %}Live group map{% else %}Rider map{% endif %}</span>
-            <h1>{% if group_id and members %}Your crew, on the move.{% else %}Find a better way through.{% endif %}</h1>
-            <p>{% if group_id and members %}Authorised live positions update while group members are riding.{% else %}Plan around useful stops and build a cycling route that works for your shift.{% endif %}</p>
+            <span class="eyebrow">{{ t('map.title') }}</span>
+            <h1>{{ t('map.heading') }}</h1>
+            <p>{{ t('map.intro') }}</p>
         </div>
-        <button id="nav-toggle" class="btn btn-primary" type="button" aria-expanded="false" aria-controls="nav-panel">Plan a route</button>
+        <button id="nav-toggle" class="btn btn-primary" type="button" aria-expanded="false" aria-controls="nav-panel">{{ t('map.plan') }}</button>
     </div>
 
     <div class="map-toolbar">
         <div id="overlay-selector" class="overlay-selector" aria-label="Map points of interest">
-            <label class="filter-chip"><input type="checkbox" data-overlay="stations" {{ 'checked' if 'stations' in default_overlays else '' }}><span><i class="filter-dot"></i>Fountains</span></label>
-            <label class="filter-chip"><input type="checkbox" data-overlay="bicycle_repair" {{ 'checked' if 'bicycle_repair' in default_overlays else '' }}><span><i class="filter-dot"></i>Repair</span></label>
-            <label class="filter-chip"><input type="checkbox" data-overlay="toilets" {{ 'checked' if 'toilets' in default_overlays else '' }}><span><i class="filter-dot"></i>Toilets</span></label>
-            <label class="filter-chip"><input type="checkbox" data-overlay="bicycleParkings" {{ 'checked' if 'bicycleParkings' in default_overlays else '' }}><span><i class="filter-dot"></i>Bike parking</span></label>
+            <label class="filter-chip"><input type="checkbox" data-overlay="stations" {{ 'checked' if 'stations' in default_overlays else '' }}><span><i class="filter-dot"></i>{{ t('map.fountains') }}</span></label>
+            <label class="filter-chip"><input type="checkbox" data-overlay="bicycle_repair" {{ 'checked' if 'bicycle_repair' in default_overlays else '' }}><span><i class="filter-dot"></i>{{ t('map.repair') }}</span></label>
+            <label class="filter-chip"><input type="checkbox" data-overlay="toilets" {{ 'checked' if 'toilets' in default_overlays else '' }}><span><i class="filter-dot"></i>{{ t('map.toilets') }}</span></label>
+            <label class="filter-chip"><input type="checkbox" data-overlay="bicycleParkings" {{ 'checked' if 'bicycleParkings' in default_overlays else '' }}><span><i class="filter-dot"></i>{{ t('map.parking') }}</span></label>
         </div>
         {% if group_id and members %}
         <a class="btn btn-secondary btn-compact" href="{{ url_for('group.detail', group_id=group_id) }}">Back to group</a>
@@ -32,10 +32,10 @@
     </div>
 
     <div class="map-canvas-wrap">
-        <div id="zoom-hint" class="zoom-hint" hidden>Zoom in to reveal nearby rider stops</div>
+        <div id="zoom-hint" class="zoom-hint" hidden>{{ t('map.zoom') }}</div>
 
         <aside id="nav-panel" class="nav-panel hidden" aria-label="Cycling route planner">
-            <div class="nav-panel-head"><h2>Plan your route</h2></div>
+            <div class="nav-panel-head"><h2>{{ t('map.plan') }}</h2></div>
             <div class="nav-section">
                 <strong>Waypoints</strong>
                 <div id="wp-list"></div>

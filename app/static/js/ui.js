@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  const uiCopy = window.ROR_UI_COPY || {};
+
   const root = document.documentElement;
   const theme = root.dataset.theme || "system";
   const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -17,7 +19,7 @@
     installPrompt = event;
     installButtons().forEach((button) => { button.disabled = false; });
     const state = document.getElementById("install-state");
-    if (state) state.textContent = "Ready to install on this device.";
+    if (state) state.textContent = uiCopy.readyInstall || "Ready to install on this device.";
   });
   installButtons().forEach((button) => {
     button.addEventListener("click", async () => {
@@ -30,7 +32,7 @@
   });
   window.addEventListener("appinstalled", () => {
     const state = document.getElementById("install-state");
-    if (state) state.textContent = "RoR is installed on this device.";
+    if (state) state.textContent = uiCopy.installed || "RoR is installed on this device.";
   });
 
   if ("serviceWorker" in navigator && (window.isSecureContext || location.hostname === "localhost")) {

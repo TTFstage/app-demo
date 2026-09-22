@@ -21,6 +21,7 @@ from app.auth.forms import (
     SOSContactForm,
 )
 from app.auth.models import SOSContact, User, UserPreference
+from app.i18n import translate
 from extensions import db, redis_client, security
 
 auth_bp = Blueprint('auth', __name__)
@@ -132,10 +133,23 @@ def settings():
     """Manage persisted safety, privacy and map preferences."""
     preferences = get_or_create_preferences(current_user)
     form = PreferencesForm(obj=preferences)
+    form.map_default_overlays.choices = [
+        ('stations,bicycle_repair', translate('settings.map_fountains_repair')),
+        ('stations,bicycle_repair,toilets,bicycleParkings', translate('settings.map_all')),
+        ('stations', translate('settings.map_fountains')),
+        ('', translate('settings.map_none')),
+    ]
+    form.appearance.choices = [
+        ('system', translate('settings.theme_system')),
+        ('light', translate('settings.theme_light')),
+        ('dark', translate('settings.theme_dark')),
+    ]
+    if request.method == 'POST' and 'language' not in request.form:
+        form.language.data = preferences.language
     if form.validate_on_submit():
         form.populate_obj(preferences)
         db.session.commit()
-        flash('Settings saved.', 'success')
+        flash(translate('flash.settings_saved'), 'success')
         return redirect(url_for('auth.settings'))
     return render_template(
         'auth/settings.html',

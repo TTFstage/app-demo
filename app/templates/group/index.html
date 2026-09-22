@@ -1,17 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Groups{% endblock %}
+{% block title %}{{ t('groups.title') }}{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div class="container page-hero-row">
         <div>
-            <div class="breadcrumb"><a href="{{ url_for('other.index') }}">Workspace</a><span>/</span><span>Groups</span></div>
-            <h1>Your crews.</h1>
-            <p>Coordinate private rider groups and share live road context with the people you trust.</p>
+            <h1>{{ t('groups.heading') }}</h1>
+            <p>{{ t('groups.intro') }}</p>
         </div>
         <div class="button-row">
-            <a class="btn btn-secondary" href="{{ url_for('group.join') }}">Join with code</a>
-            <a class="btn btn-primary" href="{{ url_for('group.create') }}">Create group</a>
+            <a class="btn btn-secondary" href="{{ url_for('group.join') }}">{{ t('groups.join_code') }}</a>
+            <a class="btn btn-primary" href="{{ url_for('group.create') }}">{{ t('groups.create') }}</a>
         </div>
     </div>
 </section>
@@ -33,11 +32,11 @@
     {% else %}
     <div class="empty-state">
         <div class="empty-icon" aria-hidden="true">◎</div>
-        <h2>No groups yet</h2>
-        <p>Create a crew for your team or enter a group code someone shared with you.</p>
+        <h2>{{ t('groups.empty') }}</h2>
+        <p>{{ t('groups.empty_help') }}</p>
         <div class="button-row" style="justify-content:center">
-            <a class="btn btn-primary" href="{{ url_for('group.create') }}">Create a group</a>
-            <a class="btn btn-secondary" href="{{ url_for('group.join') }}">Join a group</a>
+            <a class="btn btn-primary" href="{{ url_for('group.create') }}">{{ t('groups.create_one') }}</a>
+            <a class="btn btn-secondary" href="{{ url_for('group.join') }}">{{ t('groups.join_one') }}</a>
         </div>
     </div>
     {% endif %}

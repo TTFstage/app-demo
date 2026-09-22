@@ -31,11 +31,12 @@ def test_settings_are_persisted_and_used_by_map(client, user_factory):
             "browser_notifications_enabled": "y",
             "map_default_overlays": "stations",
             "appearance": "dark",
+            "language": "it",
         },
         follow_redirects=True,
     )
     assert response.status_code == 200
-    assert b"Settings saved" in response.data
+    assert b"Impostazioni salvate" in response.data
 
     with client.application.app_context():
         preferences = UserPreference.query.one()
@@ -44,10 +45,13 @@ def test_settings_are_persisted_and_used_by_map(client, user_factory):
         assert preferences.high_accuracy_gps is False
         assert preferences.map_default_overlays == "stations"
         assert preferences.appearance == "dark"
+        assert preferences.language == "it"
 
     map_response = client.get("/map/")
     assert b'data-overlay="stations" checked' in map_response.data
     assert b'data-overlay="bicycle_repair" checked' not in map_response.data
+    assert b">Mappa<" in map_response.data
+    assert b">Gruppi<" in map_response.data
 
 
 def test_profile_and_password_can_be_updated(client, user_factory):
@@ -167,8 +171,13 @@ def test_pwa_assets_are_available(client):
     manifest = client.get("/static/manifest.webmanifest")
     worker = client.get("/service-worker.js")
     offline = client.get("/offline")
+    stylesheet = client.get("/static/style.css")
     assert manifest.status_code == 200
     assert manifest.get_json()["display"] == "standalone"
     assert worker.status_code == 200
     assert worker.headers["Service-Worker-Allowed"] == "/"
     assert offline.status_code == 200
+    assert stylesheet.status_code == 200
+    assert b".mobile-tabbar" in stylesheet.data
+    assert b"@media (max-width: 359px)" in stylesheet.data
+    assert b".mobile-tab span" in stylesheet.data

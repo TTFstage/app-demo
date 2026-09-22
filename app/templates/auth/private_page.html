@@ -1,54 +1,53 @@
 {% extends "base.html" %}
-{% block title %}Profile{% endblock %}
+{% block title %}{{ t('profile.title') }}{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div class="container">
-        <div class="breadcrumb"><a href="{{ url_for('other.index') }}">Workspace</a><span>/</span><span>Profile</span></div>
-        <h1>Your rider profile.</h1>
-        <p>The identity attached to your rides, groups and safety data.</p>
+        <h1>{{ t('profile.heading') }}</h1>
+        <p>{{ t('profile.intro') }}</p>
     </div>
 </section>
 
 <section class="container profile-layout">
     <div class="content-card">
-        <span class="eyebrow">Personal details</span>
+        <span class="eyebrow">{{ t('profile.details') }}</span>
         <dl class="profile-grid">
-            <div class="profile-item"><dt>Username</dt><dd>{{ username }}</dd></div>
+            <div class="profile-item"><dt>{{ t('profile.username') }}</dt><dd>{{ username }}</dd></div>
             <div class="profile-item"><dt>Email</dt><dd>{{ email }}</dd></div>
-            <div class="profile-item"><dt>Phone</dt><dd>{{ phone_number if phone_number else 'Not set' }}</dd></div>
-            <div class="profile-item"><dt>Tax ID code</dt><dd>{{ tax_id_code }}</dd></div>
-            <div class="profile-item"><dt>Full name</dt><dd>{{ full_name }}</dd></div>
-            <div class="profile-item"><dt>Date of birth</dt><dd>{{ date_of_birth }}</dd></div>
-            <div class="profile-item"><dt>Gender</dt><dd>{{ gender }}</dd></div>
-            <div class="profile-item"><dt>City / country of birth</dt><dd>{{ birth_city_country }}</dd></div>
+            <div class="profile-item"><dt>{{ t('profile.phone') }}</dt><dd>{{ phone_number if phone_number else t('profile.not_set') }}</dd></div>
+            <div class="profile-item"><dt>{{ t('profile.tax_id') }}</dt><dd>{{ tax_id_code }}</dd></div>
+            <div class="profile-item"><dt>{{ t('profile.full_name') }}</dt><dd>{{ full_name }}</dd></div>
+            <div class="profile-item"><dt>{{ t('profile.birth_date') }}</dt><dd>{{ date_of_birth }}</dd></div>
+            <div class="profile-item"><dt>{{ t('profile.gender') }}</dt><dd>{{ gender }}</dd></div>
+            <div class="profile-item"><dt>{{ t('profile.birth_place') }}</dt><dd>{{ birth_city_country }}</dd></div>
         </dl>
     </div>
     <aside class="account-actions">
         <div class="account-panel">
-            <h2>Account controls</h2>
-            <p>Update your details, password, privacy and safety preferences.</p>
+            <h2>{{ t('profile.controls') }}</h2>
+            <p>{{ t('profile.controls_help') }}</p>
             <div class="button-stack">
-                <a class="btn btn-primary btn-block" href="{{ url_for('auth.edit_profile') }}">Edit profile</a>
-                <a class="btn btn-secondary btn-block" href="{{ url_for('auth.change_password') }}">Change password</a>
-                <a class="btn btn-secondary btn-block" href="{{ url_for('auth.settings') }}">Open settings</a>
+                <a class="btn btn-primary btn-block" href="{{ url_for('auth.edit_profile') }}">{{ t('settings.edit_profile') }}</a>
+                <a class="btn btn-secondary btn-block" href="{{ url_for('auth.change_password') }}">{{ t('settings.change_password') }}</a>
+                <a class="btn btn-secondary btn-block" href="{{ url_for('auth.settings') }}">{{ t('profile.settings') }}</a>
             </div>
             {% if not onboarding_completed %}<a class="text-link" href="{{ url_for('auth.onboarding') }}">Complete device setup →</a>{% endif %}
         </div>
         <div class="account-panel">
-            <h2>End this session</h2>
-            <p>Sign out on this device. Your ride history and settings stay safe.</p>
+            <h2>{{ t('profile.logout_heading') }}</h2>
+            <p>{{ t('profile.logout_help') }}</p>
             <form method="POST" action="{{ url_for('security.logout') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-primary btn-block" type="submit">Log out</button>
+                <button class="btn btn-primary btn-block" type="submit">{{ t('profile.logout') }}</button>
             </form>
         </div>
         <div class="account-panel account-panel-danger">
-            <h2>Delete account</h2>
-            <p>Permanently removes your profile, rides and private data. This cannot be undone.</p>
-            <form method="POST" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm('Are you sure you want to delete your account? This action is irreversible.');">
+            <h2>{{ t('profile.delete_heading') }}</h2>
+            <p>{{ t('profile.delete_help') }}</p>
+            <form method="POST" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm({{ t('profile.delete_confirm')|tojson }});">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-danger btn-block" type="submit">Delete account</button>
+                <button class="btn btn-danger btn-block" type="submit">{{ t('profile.delete') }}</button>
             </form>
         </div>
     </aside>

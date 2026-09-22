@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Ride{% endblock %}
+{% block title %}{{ t('nav.home') }}{% endblock %}
 
 {% block content %}
 {% if current_user and current_user.is_authenticated %}
@@ -7,19 +7,19 @@
     <div class="container">
         <div class="dashboard-head">
             <div>
-                <span class="eyebrow">Rider dashboard</span>
-                <h1>Ready when you are, {{ current_user.username }}.</h1>
-                <p>Start a protected ride, keep your team in the loop, and let RoR handle the route data.</p>
+                <span class="eyebrow">{{ t('home.dashboard') }}</span>
+                <h1>{{ t('home.ready', name=current_user.username) }}</h1>
+                <p>{{ t('home.intro') }}</p>
             </div>
-            <a class="btn btn-secondary" href="{{ url_for('map_pages.home') }}">Open rider map <span aria-hidden="true">→</span></a>
+            <a class="btn btn-secondary" href="{{ url_for('map_pages.home') }}">{{ t('home.open_map') }} <span aria-hidden="true">→</span></a>
         </div>
 
         <div class="dashboard-grid">
             <section id="session-section" class="ride-console" aria-labelledby="ride-console-title">
                 <div class="console-top">
-                    <span class="eyebrow">Live ride</span>
-                    <h2 id="ride-console-title">Track this shift.</h2>
-                    <p>RoR records your route, adjusts sampling to save battery, and monitors for a possible fall while you ride.</p>
+                    <span class="eyebrow">{{ t('home.live_ride') }}</span>
+                    <h2 id="ride-console-title">{{ t('home.track_shift') }}</h2>
+                    <p>{{ t('home.track_help') }}</p>
                     <p id="status" class="ride-status" aria-live="polite">Status: Tracking stopped.</p>
                 </div>
                 <div class="live-metrics" aria-label="Live ride metrics">
@@ -34,12 +34,12 @@
                 </div>
                 <div class="console-actions">
                     <button id="btn-start" class="btn btn-white" type="button" onclick="startTracking();">
-                        <span aria-hidden="true">●</span> Start tracking
+                        <span aria-hidden="true">●</span> {{ t('home.start_tracking') }}
                     </button>
                     <button id="btn-stop" class="btn btn-white" type="button" onclick="stopTracking();">
-                        <span aria-hidden="true">■</span> Finish ride
+                        <span aria-hidden="true">■</span> {{ t('home.finish_ride') }}
                     </button>
-                    <a class="btn btn-secondary" href="{{ url_for('analytics.index') }}">View past rides</a>
+                    <a class="btn btn-secondary" href="{{ url_for('analytics.index') }}">{{ t('home.past_rides') }}</a>
                 </div>
             </section>
 
@@ -52,13 +52,13 @@
                 </a>
                 {% endif %}
                 <a class="quick-card" href="{{ url_for('group.index') }}">
-                    <span class="quick-card-label">Your crew</span>
-                    <h3>See who is out on the road.</h3>
+                    <span class="quick-card-label">{{ t('home.your_crew') }}</span>
+                    <h3>{{ t('home.crew_help') }}</h3>
                     <span class="quick-card-arrow" aria-hidden="true">→</span>
                 </a>
                 <a class="quick-card quick-card-safety" href="{{ url_for('auth.list_sos_contacts') }}">
-                    <span class="quick-card-label">Safety setup</span>
-                    <h3>Keep emergency contacts current.</h3>
+                    <span class="quick-card-label">{{ t('home.safety_setup') }}</span>
+                    <h3>{{ t('home.safety_help') }}</h3>
                     <span class="quick-card-arrow" aria-hidden="true">→</span>
                 </a>
             </div>

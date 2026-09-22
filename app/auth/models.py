@@ -228,6 +228,7 @@ class UserPreference(db.Model):
     high_accuracy_gps = db.Column(db.Boolean, nullable=False, default=True)
     map_default_overlays = db.Column(db.String(120), nullable=False, default='stations,bicycle_repair')
     appearance = db.Column(db.String(16), nullable=False, default='system')
+    language = db.Column(db.String(5), nullable=False, default='en')
     onboarding_completed = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(

@@ -37,6 +37,15 @@ def create_app(config_class=Config):
     from app.auth.models import user_datastore
     security.init_app(app, user_datastore, register_form=ExtendedRegisterForm)
 
+    from app.i18n import get_current_language, translate
+
+    @app.context_processor
+    def inject_i18n():
+        return {
+            'current_language': get_current_language(),
+            't': translate,
+        }
+
     # Register Blueprints
     # Analytics feature
     from app.analytics import analytics_bp
