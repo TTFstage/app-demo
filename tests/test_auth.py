@@ -74,3 +74,18 @@ def test_registration_accepts_valid_omocode(client, app):
     assert response.status_code == 302
     with app.app_context():
         assert user_datastore.find_user(email="fabio.caccamo@gmail.com") is not None
+
+
+def test_registration_reports_duplicate_tax_id_without_server_error(client, app):
+    first_registration = client.post("/register", data=_valid_registration(), follow_redirects=False)
+    assert first_registration.status_code == 302
+
+    second_client = app.test_client()
+    duplicate_registration = second_client.post(
+        "/register",
+        data=_valid_registration(email="another.fabio@gmail.com", username="fabio_second"),
+        follow_redirects=False,
+    )
+
+    assert duplicate_registration.status_code == 200
+    assert b"An account with this tax ID code already exists" in duplicate_registration.data

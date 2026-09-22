@@ -45,6 +45,14 @@ def validate_tax_id_code(form, field):
     if cf not in accepted_codes:
         raise ValidationError('The tax ID code does not match the personal details entered.')
 
+    # Flask-Security handles duplicate emails and usernames, but this app also
+    # guarantees one account per tax ID. Validate it before the database commit
+    # so the user receives a useful form error instead of an HTTP 500 response.
+    from app.auth.models import User
+
+    if User.query.filter_by(tax_id_code=cf).first() is not None:
+        raise ValidationError('An account with this tax ID code already exists.')
+
 
 class ExtendedRegisterForm(RegisterFormV2):
     """Extended registration form with additional fields."""
