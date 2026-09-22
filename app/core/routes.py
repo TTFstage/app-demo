@@ -8,15 +8,18 @@ from flask import (
     Blueprint,
     abort,
     current_app,
+    flash,
     jsonify,
     make_response,
+    redirect,
     render_template,
     request,
     send_file,
+    url_for,
 )
 from flask_security import current_user, login_required
 
-from app.auth.models import FallEvent, RiderShift, SOSAlert, SOSContact, UserPreference
+from app.auth.models import Bike, FallEvent, RiderShift, SOSAlert, SOSContact, UserPreference
 from extensions import db
 
 core_bp = Blueprint('core', __name__)
@@ -37,6 +40,26 @@ def index():
         falls=falls,
         preferences=preferences,
     )
+
+
+@core_bp.route("/bike/<bike_id>")
+@login_required
+def link_bike(bike_id):
+    """Associate a bike with the current rider, replacing any existing bike."""
+    bike = Bike.query.filter_by(bike_id=bike_id).first_or_404()
+
+    if bike.user_id != current_user.id:
+        if current_user.bike is not None:
+            current_user.bike.user_id = None
+            # Flush before assigning the replacement so the one-bike unique
+            # constraint is respected by every supported database engine.
+            db.session.flush()
+
+        bike.user_id = current_user.id
+        db.session.commit()
+        flash('Bike linked to your account.', 'success')
+
+    return redirect(url_for('core.index'))
 
 @core_bp.route("/download/gpx/<int:shift_id>")
 @login_required

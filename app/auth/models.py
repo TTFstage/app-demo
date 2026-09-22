@@ -45,6 +45,7 @@ class User(db.Model, UserMixin):
         uselist=False,
     )
     sos_alerts = db.relationship('SOSAlert', back_populates='user', cascade='all, delete-orphan')
+    bike = db.relationship('Bike', back_populates='user', uselist=False)
 
     # Validation to ensure that empty phone numbers are stored as NULL in the database
     @validates("phone_number")
@@ -52,6 +53,48 @@ class User(db.Model, UserMixin):
         if value is not None and not str(value).strip():
             return None  # Store NULL instead of empty string
         return value
+
+
+def generate_bike_id():
+    """Generate the rider-facing identifier assigned to a newly registered bike."""
+    return ''.join(secrets.choice(string.ascii_letters) for _ in range(12))
+
+
+class Bike(db.Model):
+    __tablename__ = 'bikes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    bike_id = db.Column(db.String(32), unique=True, nullable=False, default=generate_bike_id)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey('user.id', ondelete='SET NULL'),
+        nullable=True,
+        unique=True,
+    )
+    total_km = db.Column(db.Float, nullable=False, default=0.0)
+
+    user = db.relationship('User', back_populates='bike')
+    tracking_sessions = db.relationship(
+        'BikeTracking',
+        back_populates='bike',
+        cascade='all, delete-orphan',
+    )
+
+
+class BikeTracking(db.Model):
+    __tablename__ = 'bike_tracking'
+
+    id = db.Column(db.Integer, primary_key=True)
+    bike_id = db.Column(
+        db.Integer,
+        db.ForeignKey('bikes.id', ondelete='CASCADE'),
+        nullable=False,
+    )
+    date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    total_km = db.Column(db.Float, nullable=False, default=0.0)
+    gpx_path = db.Column(db.String(512), nullable=True)
+
+    bike = db.relationship('Bike', back_populates='tracking_sessions')
 
 class GroupMembership(db.Model):
     __tablename__ = 'group_memberships'
