@@ -35,9 +35,9 @@
 
         <section class="settings-section" id="map-settings">
             <div class="settings-section-head"><div><span class="eyebrow">{{ t('settings.map_display') }}</span><h2>{{ t('settings.defaults') }}</h2></div></div>
-            <div class="setting-row"><label for="map_default_overlays"><strong>{{ t('settings.map_detail') }}</strong><small>{{ t('settings.map_detail_help') }}</small></label>{{ form.map_default_overlays(id='map_default_overlays', class='select-control') }}</div>
-            <div class="setting-row"><label for="appearance"><strong>{{ t('settings.appearance') }}</strong><small>{{ t('settings.appearance_help') }}</small></label>{{ form.appearance(id='appearance', class='select-control') }}</div>
-            <div class="setting-row"><label for="language"><strong>{{ t('settings.language') }}</strong><small>{{ t('settings.language_help') }}</small></label>{{ form.language(id='language', class='select-control') }}</div>
+            <div class="setting-row setting-row-select"><label for="map_default_overlays"><strong>{{ t('settings.map_detail') }}</strong><small>{{ t('settings.map_detail_help') }}</small></label>{{ form.map_default_overlays(id='map_default_overlays', class='select-control') }}</div>
+            <div class="setting-row setting-row-select"><label for="appearance"><strong>{{ t('settings.appearance') }}</strong><small>{{ t('settings.appearance_help') }}</small></label>{{ form.appearance(id='appearance', class='select-control') }}</div>
+            <div class="setting-row setting-row-select"><label for="language"><strong>{{ t('settings.language') }}</strong><small>{{ t('settings.language_help') }}</small></label>{{ form.language(id='language', class='select-control') }}</div>
         </section>
 
         <div class="settings-save"><button class="btn btn-primary" type="submit">{{ t('settings.save') }}</button><span>{{ t('settings.apply_next') }}</span></div>

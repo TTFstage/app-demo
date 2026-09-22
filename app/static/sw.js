@@ -1,4 +1,4 @@
-const CACHE_NAME = "ror-shell-v4";
+const CACHE_NAME = "ror-shell-v5";
 const SHELL = [
   "/offline",
   "/static/style.css",

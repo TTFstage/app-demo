@@ -22,18 +22,19 @@
     <div class="card-grid">
         {% for m in memberships %}
         <a class="list-card" href="{{ url_for('group.detail', group_id=m.group.id) }}">
-            <div>
-                <span class="role-badge">{{ m.role }}</span>
+            <span class="group-card-avatar" aria-hidden="true">{{ m.group.name[:1]|upper }}</span>
+            <div class="group-card-main">
+                <span class="group-card-meta">{{ m.group.members|length }} {{ t('groups.members') }} · {{ m.role }}</span>
                 <h2>{{ m.group.name }}</h2>
-                <p>{{ m.group.description or 'Private rider group' }}</p>
+                <p>{{ m.group.description or t('groups.private') }}</p>
             </div>
             <span class="list-arrow" aria-hidden="true">→</span>
         </a>
         {% endfor %}
     </div>
     {% else %}
-    <div class="empty-state">
-        <div class="empty-icon" aria-hidden="true">◎</div>
+    <div class="empty-state feature-empty group-empty">
+        <span class="empty-route-art" aria-hidden="true"><i></i><b></b></span>
         <h2>{{ t('groups.empty') }}</h2>
         <p>{{ t('groups.empty_help') }}</p>
         <div class="button-row" style="justify-content:center">

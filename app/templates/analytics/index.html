@@ -18,6 +18,16 @@
 
 <section class="container analytics-grid">
     {% if shifts %}
+    <div class="ride-history-strip" aria-label="{{ t('analytics.completed') }}">
+        {% for shift in shifts[:6] %}
+        <button type="button" class="ride-history-card" data-shift-id="{{ shift.id }}" aria-pressed="false">
+            <span class="ride-history-icon" aria-hidden="true">↗</span>
+            <span class="ride-history-date">{{ shift.created_at.strftime('%d/%m/%Y · %H:%M') }}</span>
+            <strong>{{ shift.total_distance_km | default(0, true) | round(2) }} <small>km</small></strong>
+            <span class="ride-history-duration">{{ shift.duration_min | default(0, true) | round(0) | int }} min</span>
+        </button>
+        {% endfor %}
+    </div>
     <div class="analytics-map-card">
         <div class="field">
             <label for="shiftSelect">{{ t('analytics.completed') }}</label>
@@ -34,28 +44,29 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="analytics-map-label"><span>{{ t('analytics.route_preview') }}</span><span aria-hidden="true">↗</span></div>
         <div id="map" aria-label="Selected ride route"></div>
     </div>
 
     <aside class="stats-panel" id="statsPanel" style="display:none">
-        <span class="stats-kicker">Session overview</span>
-        <h2>Your ride at a glance</h2>
-        <div class="stat-item"><span>Date</span><span id="statDate">—</span></div>
-        <div class="stat-item"><span>Recorded distance</span><span id="statDistance">—</span></div>
-        <div class="stat-item"><span>Duration</span><span id="statDuration">—</span></div>
-        <div class="stat-item"><span>Average speed</span><span id="statSpeed">—</span></div>
-        <h3 class="stats-subtitle">From the GPX track</h3>
-        <div class="stat-item"><span>Track distance</span><span id="gpxDistance">—</span></div>
-        <div class="stat-item"><span>Elevation gain</span><span id="gpxElevationGain">—</span></div>
-        <div class="stat-item"><span>Elevation loss</span><span id="gpxElevationLoss">—</span></div>
+        <span class="stats-kicker">{{ t('analytics.overview') }}</span>
+        <h2>{{ t('analytics.glance') }}</h2>
+        <div class="stat-item"><span>{{ t('analytics.date') }}</span><span id="statDate">—</span></div>
+        <div class="stat-item"><span>{{ t('ride.distance') }}</span><span id="statDistance">—</span></div>
+        <div class="stat-item"><span>{{ t('analytics.duration') }}</span><span id="statDuration">—</span></div>
+        <div class="stat-item"><span>{{ t('analytics.average_speed') }}</span><span id="statSpeed">—</span></div>
+        <h3 class="stats-subtitle">{{ t('analytics.gpx') }}</h3>
+        <div class="stat-item"><span>{{ t('analytics.track_distance') }}</span><span id="gpxDistance">—</span></div>
+        <div class="stat-item"><span>{{ t('analytics.ascent') }}</span><span id="gpxElevationGain">—</span></div>
+        <div class="stat-item"><span>{{ t('analytics.descent') }}</span><span id="gpxElevationLoss">—</span></div>
     </aside>
     {% else %}
-    <div class="analytics-empty">
+    <div class="analytics-empty feature-empty">
         <div>
-            <span class="empty-icon" aria-hidden="true">◎</span>
+            <span class="empty-route-art" aria-hidden="true"><i></i><b></b></span>
             <h2>{{ t('analytics.empty') }}</h2>
             <p>{{ t('analytics.empty_help') }}</p>
-            <a class="btn btn-primary" href="{{ url_for('core.index') }}">{{ t('home.start_tracking') }}</a>
+            <a class="btn btn-primary" href="{{ url_for('core.index', record=1) }}">{{ t('ride.open') }}</a>
         </div>
     </div>
     {% endif %}
@@ -95,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (currentGpxLayer) map.removeLayer(currentGpxLayer);
         currentGpxLayer = new L.GPX(gpxUrl, {
             async: true,
-            polyline_options: { color: '#000000', weight: 5, opacity: .86 },
+            polyline_options: { color: '#ff5b2e', weight: 5, opacity: .95 },
             marker_options: {
                 startIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-start.png',
                 endIconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/pin-icon-end.png',
@@ -108,6 +119,14 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('gpxElevationLoss').textContent = event.target.get_elevation_loss().toFixed(0) + ' m';
         }).addTo(map);
     });
+    document.querySelectorAll('.ride-history-card').forEach((card) => {
+        card.addEventListener('click', () => {
+            shiftSelect.value = card.dataset.shiftId;
+            shiftSelect.dispatchEvent(new Event('change'));
+            document.querySelectorAll('.ride-history-card').forEach((item) => item.setAttribute('aria-pressed', String(item === card)));
+        });
+    });
+    document.querySelector('.ride-history-card')?.click();
 });
 </script>
 {% endif %}

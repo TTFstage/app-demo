@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ t('nav.home') }}{% endblock %}
+{% block head %}{% if current_user.is_authenticated %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endif %}{% endblock %}
 
 {% block content %}
 {% if current_user and current_user.is_authenticated %}
@@ -20,25 +21,10 @@
                     <span class="eyebrow">{{ t('home.live_ride') }}</span>
                     <h2 id="ride-console-title">{{ t('home.track_shift') }}</h2>
                     <p>{{ t('home.track_help') }}</p>
-                    <p id="status" class="ride-status" aria-live="polite">Status: Tracking stopped.</p>
-                </div>
-                <div class="live-metrics" aria-label="Live ride metrics">
-                    <div><span>Time</span><strong id="metric-duration">00:00</strong></div>
-                    <div><span>Distance</span><strong id="metric-distance">0.00 km</strong></div>
-                    <div><span>Speed</span><strong id="metric-speed">— km/h</strong></div>
-                    <div><span>GPS</span><strong id="metric-gps">Waiting</strong></div>
-                    <div><span>Battery</span><strong id="metric-battery">—</strong></div>
-                    <div><span>Network</span><strong id="metric-network">Online</strong></div>
-                    <div><span>Queued</span><strong id="metric-queue">0</strong></div>
-                    <div><span>Last sync</span><strong id="metric-sync">—</strong></div>
+                    <p class="home-ride-note">{{ t('ride.home_hint') }}</p>
                 </div>
                 <div class="console-actions">
-                    <button id="btn-start" class="btn btn-white" type="button" onclick="startTracking();">
-                        <span aria-hidden="true">●</span> {{ t('home.start_tracking') }}
-                    </button>
-                    <button id="btn-stop" class="btn btn-white" type="button" onclick="stopTracking();">
-                        <span aria-hidden="true">■</span> {{ t('home.finish_ride') }}
-                    </button>
+                    <button class="btn btn-white" type="button" onclick="openRideScreen();"><span aria-hidden="true">●</span> {{ t('ride.open') }}</button>
                     <a class="btn btn-secondary" href="{{ url_for('analytics.index') }}">{{ t('home.past_rides') }}</a>
                 </div>
             </section>
@@ -63,6 +49,11 @@
                 </a>
             </div>
         </div>
+        <a class="home-route-card" href="{{ url_for('analytics.index') if shifts else url_for('map_pages.home') }}">
+            <span class="home-route-art" aria-hidden="true"><i></i><b></b><em></em></span>
+            <span class="home-route-copy"><span class="eyebrow">{{ t('ride.latest') if shifts else t('nav.map') }}</span><strong>{% if shifts %}{{ shifts[0].total_distance_km | default(0, true) | round(2) }} km{% else %}{{ t('ride.next_title') }}{% endif %}</strong><small>{% if shifts %}{{ shifts[0].created_at.strftime('%d/%m/%Y · %H:%M') }}{% else %}{{ t('ride.next_help') }}{% endif %}</small></span>
+            <span class="home-route-arrow" aria-hidden="true">↗</span>
+        </a>
     </div>
 </section>
 
@@ -92,6 +83,42 @@
                 <p>Store up to five trusted contacts and order them by priority.</p>
             </article>
         </div>
+    </div>
+</section>
+
+<section id="ride-screen" class="ride-screen" role="dialog" aria-modal="true" aria-labelledby="ride-screen-title" hidden>
+    <div class="ride-screen-top">
+        <div><span class="ride-screen-brand">RoR<span class="accent-dot">.</span></span><span id="ride-phase" class="ride-phase">{{ t('ride.ready') }}</span></div>
+        <button id="ride-close" class="ride-icon-button" type="button" onclick="closeRideScreen()" aria-label="{{ t('ride.close') }}">×</button>
+    </div>
+    <div class="ride-map-stage">
+        <div id="ride-map" aria-label="{{ t('ride.map') }}"></div>
+        <div class="ride-map-shade" aria-hidden="true"></div>
+        <div class="ride-map-overlay">
+            <span class="ride-map-eyebrow" id="ride-screen-title">{{ t('ride.title') }}</span>
+            <strong id="metric-duration">00:00</strong>
+            <span class="ride-map-subtitle">{{ t('ride.elapsed') }}</span>
+        </div>
+        <span class="ride-gps-pill"><span class="live-dot" aria-hidden="true"></span><span id="metric-gps">{{ t('ride.waiting') }}</span></span>
+    </div>
+    <div class="ride-bottom-sheet">
+        <div class="ride-big-metrics">
+            <div><strong id="metric-distance">0.00 km</strong><span>{{ t('ride.distance') }}</span></div>
+            <div><strong id="metric-speed">— km/h</strong><span>{{ t('ride.speed') }}</span></div>
+        </div>
+        <p id="status" class="ride-status" aria-live="polite">{{ t('ride.ready_status') }}</p>
+        <div class="ride-small-metrics"><span>{{ t('ride.network') }} <strong id="metric-network">—</strong></span><span>{{ t('ride.queued') }} <strong id="metric-queue">0</strong></span><span>{{ t('ride.sync') }} <strong id="metric-sync">—</strong></span><span>{{ t('ride.battery') }} <strong id="metric-battery">—</strong></span></div>
+        <div class="ride-actions">
+            <button id="btn-start" class="ride-primary-action" type="button" onclick="startTracking()">{{ t('ride.start') }}</button>
+            <button id="btn-pause" class="ride-primary-action" type="button" onclick="pauseTracking()" hidden>{{ t('ride.pause') }}</button>
+            <button id="btn-resume" class="ride-primary-action" type="button" onclick="resumeTracking()" hidden>{{ t('ride.resume') }}</button>
+            <button id="btn-stop" class="ride-secondary-action" type="button" onclick="showFinishConfirm()" hidden>{{ t('ride.finish') }}</button>
+            <button id="ride-sos" class="ride-sos-action" type="button" onclick="showSOSConfirm()" hidden>SOS</button>
+        </div>
+        <p class="ride-browser-note">{{ t('ride.browser_note') }}</p>
+    </div>
+    <div id="ride-confirm" class="ride-confirm" role="alertdialog" aria-modal="true" aria-labelledby="ride-confirm-title" hidden>
+        <div class="ride-confirm-card"><span class="eyebrow">{{ t('ride.confirm_kicker') }}</span><h2 id="ride-confirm-title">{{ t('ride.confirm_title') }}</h2><p>{{ t('ride.confirm_help') }}</p><button class="ride-primary-action" type="button" onclick="stopTracking()">{{ t('ride.finish') }}</button><button class="ride-secondary-action" type="button" onclick="hideFinishConfirm()">{{ t('ride.keep') }}</button></div>
     </div>
 </section>
 {% else %}
@@ -176,6 +203,7 @@
 {% endblock %}
 
 {% block scripts %}
+{% if current_user.is_authenticated %}<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>{% endif %}
 <script>
 window.RIDER_ID = {{ current_user.id if current_user.is_authenticated else 'null' }};
 window.ROR_SETTINGS = {
@@ -184,6 +212,17 @@ window.ROR_SETTINGS = {
     highAccuracyGps: {{ (preferences.high_accuracy_gps if preferences else true)|tojson }},
     browserNotificationsEnabled: {{ (preferences.browser_notifications_enabled if preferences else false)|tojson }}
 };
+window.ROR_RIDE_COPY = {{ {
+    'ready': t('ride.ready'), 'live': t('ride.live'), 'paused': t('ride.paused'),
+    'waiting': t('ride.waiting'), 'locked': t('ride.locked'), 'unavailable': t('ride.unavailable'),
+    'online': t('ride.online'), 'offline': t('ride.offline'),
+    'charging': t('ride.charging'),
+    'recover': t('ride.recover'), 'liveStatus': t('ride.live_status'),
+    'pausedStatus': t('ride.paused_status'), 'saved': t('ride.saved'),
+    'queuedStatus': t('ride.queued_status'), 'locationError': t('ride.location_error'),
+    'motionError': t('ride.motion_error'), 'telemetryOff': t('ride.telemetry_off'),
+    'sosConfirm': t('ride.sos_confirm')
+}|tojson }};
 </script>
 <script src="{{ url_for('static', filename='js/SignalProcessor.js') }}"></script>
 <script src="{{ url_for('static', filename='js/HeadingEstimator.js') }}"></script>

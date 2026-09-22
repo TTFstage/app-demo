@@ -1,6 +1,13 @@
 // Ride tracking, fall detection and resilient telemetry delivery.
 let watchId = null;
 let isTracking = false;
+let isPaused = false;
+let pauseStart = null;
+let pausedTotalMs = 0;
+let rideMap = null;
+let rideLine = null;
+let rideMarker = null;
+let ridePath = [];
 let sendInterval = null;
 let flushInterval = null;
 let metricInterval = null;
@@ -22,6 +29,8 @@ let fallDetector = new FallDetector();
 
 const QUEUE_KEY = `ror.telemetry.queue.v1.user-${window.RIDER_ID}`;
 const END_QUEUE_KEY = `ror.telemetry.sessionEnds.v1.user-${window.RIDER_ID}`;
+const ACTIVE_KEY = `ror.telemetry.active.v1.user-${window.RIDER_ID}`;
+const copy = window.ROR_RIDE_COPY || {};
 const MAX_QUEUED_POINTS = 8000;
 const settings = window.ROR_SETTINGS || {
     telemetryEnabled: true,
@@ -79,7 +88,7 @@ function updateMetric(id, value) {
 function setRideStatus(message, state = "neutral") {
     const element = document.getElementById("status");
     if (!element) return;
-    element.textContent = `Status: ${message}`;
+    element.textContent = message;
     element.dataset.state = state;
 }
 
@@ -93,14 +102,15 @@ function formatDuration(milliseconds) {
 }
 
 function updateLiveMetrics() {
-    updateMetric("metric-duration", t0 ? formatDuration(Date.now() - t0) : "00:00");
+    const elapsed = t0 ? Date.now() - t0 - pausedTotalMs - (isPaused && pauseStart ? Date.now() - pauseStart : 0) : 0;
+    updateMetric("metric-duration", formatDuration(elapsed));
     updateMetric("metric-distance", `${totalDistanceKm.toFixed(2)} km`);
     updateMetric(
         "metric-speed",
         lastGps && Number.isFinite(lastGps.speed) ? `${lastGps.speed.toFixed(1)} km/h` : "— km/h",
     );
-    updateMetric("metric-gps", lastGps ? "Locked" : "Waiting");
-    updateMetric("metric-network", navigator.onLine ? "Online" : "Offline");
+    updateMetric("metric-gps", lastGps ? copy.locked : copy.waiting);
+    updateMetric("metric-network", navigator.onLine ? copy.online : copy.offline);
     updateMetric("metric-queue", String(dataBuffer.length));
     updateMetric(
         "metric-sync",
@@ -120,7 +130,7 @@ function haversineKm(a, b) {
 }
 
 function handleMotion(event) {
-    if (!isTracking) return;
+    if (!isTracking || isPaused) return;
     if (event.accelerationIncludingGravity) lastAcc = event.accelerationIncludingGravity;
     if (event.rotationRate) lastGyro = event.rotationRate;
 }
@@ -129,8 +139,7 @@ async function flushBuffer() {
     if (activeFlush !== null) return activeFlush;
     if (dataBuffer.length === 0) {
         try {
-            await flushSessionEnds();
-            return true;
+            return await flushSessionEnds();
         } catch (error) {
             console.error("Session sync failed", error);
             persistQueues();
@@ -139,7 +148,7 @@ async function flushBuffer() {
     }
     if (!navigator.onLine) {
         persistQueues();
-        setRideStatus("Offline — ride data is safely queued on this phone.", "warning");
+        setRideStatus(copy.queuedStatus, "warning");
         return false;
     }
 
@@ -157,13 +166,13 @@ async function flushBuffer() {
                 lastSuccessfulSync = new Date();
                 persistQueues();
             }
-            await flushSessionEnds();
-            if (isTracking) setRideStatus("Live and synced.", "good");
+            if (!await flushSessionEnds()) return false;
+            if (isTracking && !isPaused) setRideStatus(copy.liveStatus, "good");
             return true;
         } catch (error) {
             persistQueues();
             console.error("Telemetry sync failed", error);
-            setRideStatus("Connection unavailable — data is queued for retry.", "warning");
+            setRideStatus(copy.queuedStatus, "warning");
             return false;
         } finally {
             activeFlush = null;
@@ -259,9 +268,9 @@ function cancelSOS() {
 }
 
 function tick() {
-    if (!isTracking) return;
+    if (!isTracking || isPaused) return;
     if (t0 === null) t0 = Date.now();
-    const timeSec = (Date.now() - t0) / 1000;
+    const timeSec = (Date.now() - t0 - pausedTotalMs) / 1000;
     const attitude = headingEstimator.isRunning
         ? headingEstimator.getAttitude()
         : {roll: 0, pitch: 0, yaw: 0};
@@ -311,158 +320,267 @@ function setSamplingRate(milliseconds, force = false) {
         sendInterval = setInterval(tick, currentIntervalMs);
     }
     signalProcessor.setSamplingRate(1000 / milliseconds);
-    if (isTracking) {
+    if (isTracking && !isPaused) {
         setRideStatus(
-            milliseconds > 200 ? "Paused or stopped — battery saving mode." : "Moving — high precision tracking.",
+            copy.liveStatus,
             milliseconds > 200 ? "warning" : "good",
         );
     }
 }
 
-async function startTracking() {
-    if (isTracking) return;
-    if (!settings.telemetryEnabled) {
-        setRideStatus("Ride telemetry is disabled in Settings.", "warning");
-        return;
-    }
-    if (!("geolocation" in navigator)) {
-        setRideStatus("This browser does not provide location access.", "bad");
-        return;
-    }
-
-    const motionPermission = await HeadingEstimator.requestPermissions();
-    if (!motionPermission && typeof DeviceMotionEvent !== "undefined"
-        && typeof DeviceMotionEvent.requestPermission === "function") {
-        setRideStatus("Motion permission was not granted.", "bad");
-        return;
-    }
-
-    isTracking = true;
-    sosLock = false;
-    sessionId = window.crypto?.randomUUID
-        ? window.crypto.randomUUID()
-        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
-            const random = Math.random() * 16 | 0;
-            const value = character === "x" ? random : (random & 0x3 | 0x8);
-            return value.toString(16);
-        });
-    fallDetector.is_cancelled_fall = false;
-    totalDistanceKm = 0;
-    lastDistanceGps = null;
-    lastGps = null;
-    t0 = Date.now();
-
-    const startButton = document.getElementById("btn-start");
-    const stopButton = document.getElementById("btn-stop");
-    startButton.style.display = "none";
-    startButton.disabled = true;
-    stopButton.style.display = "inline-block";
-    stopButton.disabled = false;
-    setSamplingRate(50, true);
-    headingEstimator.start();
-    window.addEventListener("devicemotion", handleMotion);
-
-    watchId = navigator.geolocation.watchPosition((position) => {
-        if (!isTracking) return;
-        const nextGps = {
-            lat: position.coords.latitude,
-            lon: position.coords.longitude,
-            speed: position.coords.speed !== null ? Math.max(0, position.coords.speed * 3.6) : null,
-            time: position.timestamp || Date.now(),
-            accuracy: position.coords.accuracy,
-        };
-        if (lastDistanceGps && nextGps.accuracy <= 100) {
-            const segment = haversineKm(lastDistanceGps, nextGps);
-            if (segment < 1) totalDistanceKm += segment;
-        }
-        if (nextGps.accuracy <= 100) lastDistanceGps = nextGps;
-        lastGps = nextGps;
-        updateLiveMetrics();
-        if (Number.isFinite(position.coords.speed)) {
-            setSamplingRate(position.coords.speed < 0.6 ? 1000 : 50);
-        }
-    }, (error) => {
-        console.error("GPS error", error);
-        updateMetric("metric-gps", "Unavailable");
-        setRideStatus("Location unavailable — check this phone's permission.", "bad");
-    }, {
-        enableHighAccuracy: Boolean(settings.highAccuracyGps),
-        maximumAge: 3000,
-        timeout: 15000,
-    });
-
-    sendInterval = setInterval(tick, currentIntervalMs);
-    flushInterval = setInterval(flushBuffer, 500);
-    metricInterval = setInterval(updateLiveMetrics, 1000);
-    updateLiveMetrics();
+function saveActiveRide() {
+    if (!isTracking || !sessionId) return;
+    try {
+        localStorage.setItem(ACTIVE_KEY, JSON.stringify({
+            sessionId, t0, totalDistanceKm, lastGps, lastDistanceGps,
+            pausedTotalMs, pauseStart, isPaused, ridePath: ridePath.slice(-500), savedAt: Date.now(),
+        }));
+    } catch (error) { console.warn("Unable to save ride checkpoint", error); }
 }
 
-function stopTracking() {
-    if (!isTracking) return;
-    isTracking = false;
+function updateRideControls() {
+    document.getElementById("btn-start").hidden = isTracking;
+    document.getElementById("btn-pause").hidden = !isTracking || isPaused;
+    document.getElementById("btn-resume").hidden = !isTracking || !isPaused;
+    document.getElementById("btn-stop").hidden = !isTracking;
+    document.getElementById("ride-sos").hidden = !isTracking;
+    document.getElementById("ride-close").hidden = isTracking;
+    document.getElementById("ride-phase").textContent = !isTracking ? copy.ready : isPaused ? copy.paused : copy.live;
+}
+
+function initRideMap() {
+    if (rideMap || typeof L === "undefined") return;
+    rideMap = L.map("ride-map", {zoomControl: false, attributionControl: false}).setView([45.4642, 9.1900], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19}).addTo(rideMap);
+    rideLine = L.polyline(ridePath.map((point) => [point.lat, point.lon]), {color: "#ff5b2e", weight: 5}).addTo(rideMap);
+    if (lastGps) showRidePosition(lastGps);
+}
+
+function showRidePosition(point) {
+    if (!rideMap) return;
+    const position = [point.lat, point.lon];
+    if (!rideMarker) rideMarker = L.circleMarker(position, {radius: 8, color: "#fff", weight: 3, fillColor: "#ff5b2e", fillOpacity: 1}).addTo(rideMap);
+    else rideMarker.setLatLng(position);
+    rideMap.panTo(position);
+}
+
+function openRideScreen() {
+    const screen = document.getElementById("ride-screen");
+    if (!screen) return;
+    screen.hidden = false;
+    document.body.classList.add("ride-open");
+    updateRideControls();
+    initRideMap();
+    setTimeout(() => rideMap?.invalidateSize(), 50);
+}
+
+function closeRideScreen() {
+    if (isTracking) return;
+    document.getElementById("ride-screen").hidden = true;
+    document.body.classList.remove("ride-open");
+}
+
+function showFinishConfirm() { document.getElementById("ride-confirm").hidden = false; }
+function hideFinishConfirm() { document.getElementById("ride-confirm").hidden = true; }
+function showSOSConfirm() { if (confirm(copy.sosConfirm)) triggerSOS(); }
+
+function stopSensors() {
     window.removeEventListener("devicemotion", handleMotion);
     if (watchId !== null) navigator.geolocation.clearWatch(watchId);
     watchId = null;
     clearInterval(sendInterval);
+    sendInterval = null;
+    headingEstimator.stop();
+}
+
+function handlePosition(position) {
+    if (!isTracking || isPaused) return;
+    const nextGps = {
+        lat: position.coords.latitude, lon: position.coords.longitude,
+        speed: position.coords.speed !== null ? Math.max(0, position.coords.speed * 3.6) : null,
+        time: position.timestamp || Date.now(), accuracy: position.coords.accuracy,
+    };
+    if (lastDistanceGps && nextGps.accuracy <= 100) {
+        const segment = haversineKm(lastDistanceGps, nextGps);
+        if (segment < 1) totalDistanceKm += segment;
+    }
+    if (nextGps.accuracy <= 100) lastDistanceGps = nextGps;
+    lastGps = nextGps;
+    if (nextGps.accuracy <= 100) {
+        ridePath.push({lat: nextGps.lat, lon: nextGps.lon});
+        rideLine?.addLatLng([nextGps.lat, nextGps.lon]);
+    }
+    showRidePosition(nextGps);
+    saveActiveRide();
+    updateLiveMetrics();
+    if (Number.isFinite(position.coords.speed)) setSamplingRate(position.coords.speed < 0.6 ? 1000 : 50);
+}
+
+function startSensors() {
+    setSamplingRate(50, true);
+    headingEstimator.start();
+    window.addEventListener("devicemotion", handleMotion);
+    watchId = navigator.geolocation.watchPosition(handlePosition, (error) => {
+        console.error("GPS error", error);
+        updateMetric("metric-gps", copy.unavailable);
+        setRideStatus(copy.locationError, "bad");
+    }, {enableHighAccuracy: Boolean(settings.highAccuracyGps), maximumAge: 3000, timeout: 15000});
+    sendInterval = setInterval(tick, currentIntervalMs);
+}
+
+async function startTracking() {
+    if (isTracking) return;
+    openRideScreen();
+    if (!settings.telemetryEnabled) return setRideStatus(copy.telemetryOff, "warning");
+    if (!("geolocation" in navigator)) return setRideStatus(copy.locationError, "bad");
+    const button = document.getElementById("btn-start");
+    button.disabled = true;
+    try {
+        const motionPermission = await HeadingEstimator.requestPermissions();
+        if (!motionPermission && typeof DeviceMotionEvent !== "undefined"
+            && typeof DeviceMotionEvent.requestPermission === "function") return setRideStatus(copy.motionError, "bad");
+        const firstPosition = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: Boolean(settings.highAccuracyGps), maximumAge: 3000, timeout: 15000,
+        }));
+        isTracking = true;
+        isPaused = false;
+        pauseStart = null;
+        pausedTotalMs = 0;
+        sosLock = false;
+        sessionId = window.crypto?.randomUUID ? window.crypto.randomUUID()
+            : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+                const random = Math.random() * 16 | 0;
+                return (character === "x" ? random : (random & 0x3 | 0x8)).toString(16);
+            });
+        fallDetector.is_cancelled_fall = false;
+        totalDistanceKm = 0;
+        lastDistanceGps = null;
+        lastGps = null;
+        ridePath = [];
+        rideLine?.setLatLngs([]);
+        t0 = Date.now();
+        startSensors();
+        handlePosition(firstPosition);
+        flushInterval = setInterval(flushBuffer, 500);
+        metricInterval = setInterval(() => {updateLiveMetrics(); saveActiveRide();}, 1000);
+        setRideStatus(copy.liveStatus, "good");
+        updateRideControls();
+    } catch (error) {
+        console.error("Ride start failed", error);
+        setRideStatus(copy.locationError, "bad");
+    } finally { button.disabled = false; }
+}
+
+function pauseTracking() {
+    if (!isTracking || isPaused) return;
+    isPaused = true;
+    pauseStart = Date.now();
+    stopSensors();
+    saveActiveRide();
+    setRideStatus(copy.pausedStatus, "warning");
+    updateRideControls();
+    updateLiveMetrics();
+}
+
+async function resumeTracking() {
+    if (!isTracking || !isPaused) return;
+    const button = document.getElementById("btn-resume");
+    button.disabled = true;
+    try {
+        const position = await new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: Boolean(settings.highAccuracyGps), maximumAge: 3000, timeout: 15000,
+        }));
+        pausedTotalMs += Date.now() - pauseStart;
+        pauseStart = null;
+        isPaused = false;
+        lastDistanceGps = null;
+        startSensors();
+        handlePosition(position);
+        saveActiveRide();
+        setRideStatus(copy.liveStatus, "good");
+        updateRideControls();
+    } catch (error) {
+        console.error("Ride resume failed", error);
+        setRideStatus(copy.locationError, "bad");
+    } finally { button.disabled = false; }
+}
+
+async function stopTracking() {
+    if (!isTracking) return;
+    hideFinishConfirm();
+    isTracking = false;
+    isPaused = false;
+    stopSensors();
     clearInterval(flushInterval);
     clearInterval(metricInterval);
-    sendInterval = null;
     flushInterval = null;
     metricInterval = null;
-    headingEstimator.stop();
-
     const closingSessionId = sessionId;
     sessionId = null;
-    setRideStatus("Finishing and saving your ride…", "neutral");
-    flushBuffer().then(async (sent) => {
-        if (sent && closingSessionId) {
-            try {
-                await sendSessionEnd(closingSessionId);
-                lastSuccessfulSync = new Date();
-                setRideStatus("Ride saved.", "good");
-            } catch (error) {
-                console.error("Session close failed", error);
-                queueSessionEnd(closingSessionId);
-                setRideStatus("Ride saved locally and queued for sync.", "warning");
-            }
-        } else if (closingSessionId) {
-            queueSessionEnd(closingSessionId);
-            setRideStatus("Ride saved locally and queued for sync.", "warning");
-        }
-        updateLiveMetrics();
-    });
-
-    const startButton = document.getElementById("btn-start");
-    const stopButton = document.getElementById("btn-stop");
-    stopButton.style.display = "none";
-    stopButton.disabled = true;
-    startButton.style.display = "inline-block";
-    startButton.disabled = false;
+    localStorage.removeItem(ACTIVE_KEY);
+    queueSessionEnd(closingSessionId);
+    updateRideControls();
+    setRideStatus(copy.queuedStatus, "neutral");
+    const sent = await flushBuffer();
+    setRideStatus(sent ? copy.saved : copy.queuedStatus, sent ? "good" : "warning");
     updateLiveMetrics();
 }
 
 window.addEventListener("online", () => {
-    updateMetric("metric-network", "Online");
-    setRideStatus("Back online — syncing queued ride data…", "good");
+    updateMetric("metric-network", copy.online);
     flushBuffer();
 });
 window.addEventListener("offline", () => {
-    updateMetric("metric-network", "Offline");
+    updateMetric("metric-network", copy.offline);
     persistQueues();
-    setRideStatus("Offline — ride data is safely queued on this phone.", "warning");
+    setRideStatus(copy.queuedStatus, "warning");
 });
 window.addEventListener("pagehide", () => {
-    if (isTracking && sessionId) queueSessionEnd(sessionId);
+    if (isTracking && sessionId) {
+        stopSensors();
+        if (!isPaused) {
+            isPaused = true;
+            pauseStart = Date.now();
+        }
+        saveActiveRide();
+    }
     persistQueues();
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+    if (window.RIDER_ID && document.getElementById("ride-screen")) {
+        try {
+            const saved = JSON.parse(localStorage.getItem(ACTIVE_KEY) || "null");
+            if (saved && saved.sessionId && Number.isFinite(saved.t0)) {
+                sessionId = saved.sessionId;
+                t0 = saved.t0;
+                totalDistanceKm = saved.totalDistanceKm || 0;
+                lastGps = saved.lastGps || null;
+                lastDistanceGps = null;
+                pausedTotalMs = saved.pausedTotalMs || 0;
+                pauseStart = saved.isPaused && saved.pauseStart ? saved.pauseStart : saved.savedAt || Date.now();
+                isTracking = true;
+                isPaused = true;
+                ridePath = Array.isArray(saved.ridePath) ? saved.ridePath : [];
+                flushInterval = setInterval(flushBuffer, 500);
+                metricInterval = setInterval(() => {updateLiveMetrics(); saveActiveRide();}, 1000);
+                openRideScreen();
+                setRideStatus(copy.recover, "warning");
+            }
+        } catch (error) { console.warn("Unable to restore ride", error); }
+        const route = new URL(window.location.href);
+        if (route.searchParams.has("record")) {
+            route.searchParams.delete("record");
+            window.history.replaceState({}, "", route.pathname + route.search + route.hash);
+            openRideScreen();
+        }
+    }
     updateLiveMetrics();
     if (navigator.getBattery) {
         navigator.getBattery().then((battery) => {
             const renderBattery = () => updateMetric(
                 "metric-battery",
-                `${Math.round(battery.level * 100)}%${battery.charging ? " · charging" : ""}`,
+                `${Math.round(battery.level * 100)}%${battery.charging ? ` · ${copy.charging}` : ""}`,
             );
             renderBattery();
             battery.addEventListener("levelchange", renderBattery);

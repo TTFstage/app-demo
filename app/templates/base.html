@@ -142,13 +142,13 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"/><path d="M9 3v15m6-12v15"/></svg>
             <span>{{ t('nav.map') }}</span>
         </a>
+        <a class="mobile-tab mobile-tab-record" href="{{ url_for('core.index', record=1) }}" aria-label="{{ t('ride.open') }}">
+            <span class="record-orb" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/></svg></span>
+            <span>{{ t('nav.record') }}</span>
+        </a>
         <a class="mobile-tab {{ 'is-active' if request.blueprint == 'group' else '' }}" href="{{ url_for('group.index') }}" {% if request.blueprint == 'group' %}aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-4 2.7-7 6-7s6 3 6 7m1-6c3 0 5 2.4 5 5.5"/></svg>
             <span>{{ t('nav.groups') }}</span>
-        </a>
-        <a class="mobile-tab {{ 'is-active' if request.blueprint == 'analytics' else '' }}" href="{{ url_for('analytics.index') }}" {% if request.blueprint == 'analytics' %}aria-current="page"{% endif %}>
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg>
-            <span>{{ t('nav.analytics') }}</span>
         </a>
         <a class="mobile-tab {{ 'is-active' if request.blueprint in ['auth', 'other'] else '' }}" href="{{ url_for('auth.me') }}" {% if request.blueprint in ['auth', 'other'] %}aria-current="page"{% endif %}>
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>

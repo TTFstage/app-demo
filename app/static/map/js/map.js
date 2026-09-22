@@ -1,16 +1,17 @@
 (function () {
+  const copy = window.ROR_MAP_COPY || {};
   const ZOOM_THRESHOLD = 13;
   const DEBOUNCE_MS = 150;
   const GEOHASH_PRECISION = 5;
 
   const ENTITY_CONFIG = {
-    stations: { url: "/api/v1/fountains", color: "#2563eb", label: "Fountain" },
-    bicycle_repair: { url: "/api/v1/bicycle_repair", color: "#e63946", label: "Ciclofficina" },
-    toilets: { url: "/api/v1/toilets", color: "#16a34a", label: "Public toilet" },
+    stations: { url: "/api/v1/fountains", color: "#2563eb", label: copy.fountains },
+    bicycle_repair: { url: "/api/v1/bicycle_repair", color: "#e63946", label: copy.repair },
+    toilets: { url: "/api/v1/toilets", color: "#16a34a", label: copy.toilets },
     bicycleParkings: {
       url: "/api/v1/bicycle-parkings",
       color: "#ea580c",
-      label: "Bicycle parking",
+      label: copy.parking,
     },
 
   };
@@ -59,15 +60,19 @@
     const popup = L.popup().setContent(() => {
       const div = document.createElement("div");
       const config2 = ENTITY_CONFIG[type];
-      let extra = "";
-      if (type === "stations" && item.name) extra = `<br>${item.name}`;
-      if (type === "toilets" && item.openingHours) extra = `<br>Hours: ${item.openingHours}`;
-
-      div.innerHTML = `<strong>${config2.label}</strong>${extra}
-        <br><button class="popup-add-btn" style="margin-top:8px;padding:8px 11px;cursor:pointer;border:0;border-radius:999px;background:#000;color:#fff;font-size:0.8rem;font-weight:700;">
-          Add as waypoint
-        </button>`;
-      div.querySelector(".popup-add-btn").addEventListener("click", () => {
+      const title = document.createElement("strong");
+      title.textContent = config2.label;
+      div.appendChild(title);
+      if ((type === "stations" && item.name) || (type === "toilets" && item.openingHours)) {
+        const detail = document.createElement("div");
+        detail.textContent = type === "stations" ? item.name : `${copy.openingHours}: ${item.openingHours}`;
+        div.appendChild(detail);
+      }
+      const addButton = document.createElement("button");
+      addButton.className = "popup-add-btn";
+      addButton.textContent = copy.addWaypoint;
+      div.appendChild(addButton);
+      addButton.addEventListener("click", () => {
         addWaypointFromMap(item.lat, item.lng, `${config2.label}${item.name ? ": " + item.name : ""}`);
         map.closePopup();
       });
@@ -113,16 +118,16 @@
     });
 
     if (selected.length === 0) {
-      showMapHint("Choose a filter to show rider stops");
+      showMapHint(copy.chooseFilter);
       return;
     }
 
     if (zoom < ZOOM_THRESHOLD) {
-      showMapHint("Zoom in to reveal nearby rider stops");
+      showMapHint(copy.zoom);
       return;
     }
 
-    showMapHint("Loading nearby rider stops…");
+    showMapHint(copy.loading);
 
     const geohashes = boundsToGeohashes(map.getBounds());
     let hadError = false;
@@ -150,7 +155,7 @@
 
     if (sequence !== updateSequence) return;
     if (hadError) {
-      showMapHint("Some map data could not be loaded. Move the map to retry.", true);
+      showMapHint(copy.loadError, true);
       return;
     }
 
@@ -162,7 +167,7 @@
       0,
     );
     if (visibleCount === 0) {
-      showMapHint("No selected rider stops in this area");
+      showMapHint(copy.noStops);
     } else {
       hideMapHint();
     }
@@ -240,19 +245,19 @@
     navToggle.addEventListener("click", () => {
       const isOpen = panel.classList.toggle("hidden") === false;
       navToggle.setAttribute("aria-expanded", String(isOpen));
-      navToggle.textContent = isOpen ? "Close planner" : "Plan a route";
+      navToggle.textContent = isOpen ? copy.close : copy.plan;
       if (isOpen) renderWaypointList();
     });
 
     // Use current location (general toggle)
     document.getElementById("use-location-btn").addEventListener("click", () => {
       if (!userLatLng) {
-        showNavMsg("Location not yet available. Please wait for GPS.", true);
+        showNavMsg(copy.locationWait, true);
         return;
       }
       // Se il primo waypoint non è ancora "posizione attuale", lo imposta
       if (navState.waypoints.length === 0 || !navState.waypoints[0].isCurrentLocation) {
-        addWaypointAtIndex(0, userLatLng.lat, userLatLng.lng, "Current location", true);
+        addWaypointAtIndex(0, userLatLng.lat, userLatLng.lng, copy.currentLocation, true);
       }
     });
 
@@ -379,18 +384,30 @@
 
       const item = document.createElement("div");
       item.className = "wp-item";
-      item.innerHTML = `
-        <span class="wp-dot" style="background:${color}"></span>
-        <span class="wp-label" title="${wp.label}">${wp.label}</span>
-        <button class="wp-remove" title="Rimuovi">✕</button>
-      `;
-      item.querySelector(".wp-remove").addEventListener("click", () => removeWaypoint(i));
+      const dot = document.createElement("span");
+      dot.className = "wp-dot";
+      dot.style.background = color;
+      const label = document.createElement("span");
+      label.className = "wp-label";
+      label.title = wp.label;
+      label.textContent = wp.label;
+      const remove = document.createElement("button");
+      remove.className = "wp-remove";
+      remove.type = "button";
+      remove.title = copy.remove;
+      remove.setAttribute("aria-label", copy.remove);
+      remove.textContent = "✕";
+      remove.addEventListener("click", () => removeWaypoint(i));
+      item.append(dot, label, remove);
       list.appendChild(item);
     });
 
     // Messaggio se vuoto
     if (navState.waypoints.length === 0) {
-      list.innerHTML = '<p class="wp-empty">No waypoints added</p>';
+      const empty = document.createElement("p");
+      empty.className = "wp-empty";
+      empty.textContent = copy.emptyWaypoints;
+      list.appendChild(empty);
     }
 
     // Show action buttons only if enough points
@@ -416,28 +433,28 @@
     const q = input.value.trim();
     if (!q) return;
 
-    showNavMsg("🔍 Searching...");
+    showNavMsg(copy.searching);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&accept-language=en`,
-        { headers: { "Accept-Language": "en" } }
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&accept-language=${encodeURIComponent(document.documentElement.lang || "en")}`,
+        { headers: { "Accept-Language": document.documentElement.lang || "en" } }
       );
       const data = await res.json();
-      if (!data.length) { showNavMsg("No results found.", true); return; }
+      if (!data.length) { showNavMsg(copy.noResults, true); return; }
       const place = data[0];
       addWaypointEnd(parseFloat(place.lat), parseFloat(place.lon), place.display_name.split(",")[0]);
       map.setView([place.lat, place.lon], 15);
       input.value = "";
       showNavMsg("");
     } catch {
-      showNavMsg("Search error.", true);
+      showNavMsg(copy.searchError, true);
     }
   }
 
   // ── Routing (OSRM cycling) ──────────────────────────────────────────────────
   async function calcRoute() {
     if (navState.waypoints.length < 2) return;
-    showNavMsg("⏳ Calculating route...");
+    showNavMsg(copy.calculating);
 
     const coords = navState.waypoints.map((wp) => `${wp.lng},${wp.lat}`).join(";");
     const url = `https://router.project-osrm.org/route/v1/cycling/${coords}?overview=full&geometries=geojson&steps=false`;
@@ -445,13 +462,13 @@
     try {
       const res = await fetch(url);
       const data = await res.json();
-      if (data.code !== "Ok") { showNavMsg("Route not found.", true); return; }
+      if (data.code !== "Ok") { showNavMsg(copy.routeNotFound, true); return; }
 
       const route = data.routes[0];
       if (navState.routeLayer) map.removeLayer(navState.routeLayer);
 
       navState.routeLayer = L.geoJSON(route.geometry, {
-        style: { color: "#000000", weight: 5, opacity: 0.86 },
+        style: { color: "#ff5b2e", weight: 5, opacity: 0.95 },
       }).addTo(map);
 
       // Zoom to route
@@ -463,7 +480,7 @@
       navState.routeInfo = { distance: km, duration: min };
       showNavMsg(`🚴 ${km} km · ~${min} min`);
     } catch {
-      showNavMsg("Route calculation error.", true);
+      showNavMsg(copy.routeError, true);
     }
   }
 
@@ -478,7 +495,7 @@
   // ── Punto più vicino sul/nel percorso ────────────────────────────────────────
   async function addNearestOnRoute(type) {
     if (navState.waypoints.length < 2) return;
-    showNavMsg("🔍 Looking for the nearest...");
+    showNavMsg(copy.looking);
 
     // Bounding box of the route (from waypoints)
     const lats = navState.waypoints.map((w) => w.lat);
@@ -497,7 +514,7 @@
     try {
       const res = await fetch(`${config.url}?gh5=${geohashes.join(",")}`);
       const items = await res.json();
-      if (!items.length) { showNavMsg(`No ${config.label.toLowerCase()} found nearby.`, true); return; }
+      if (!items.length) { showNavMsg(copy.noNearby, true); return; }
 
       // Center of the route
       const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
@@ -518,14 +535,14 @@
       renderWaypointList();
       await calcRoute();
     } catch {
-      showNavMsg("Error fetching data.", true);
+      showNavMsg(copy.fetchError, true);
     }
   }
 
   function showNavMsg(msg, isError = false) {
     const el = document.getElementById("nav-msg");
     el.textContent = msg;
-    el.style.color = isError ? "#dc2626" : "#374151";
+    el.style.color = isError ? "var(--danger)" : "var(--gray-700)";
   }
 
   // ── Init ────────────────────────────────────────────────────────────────────

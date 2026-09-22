@@ -34,33 +34,33 @@
     <div class="map-canvas-wrap">
         <div id="zoom-hint" class="zoom-hint" hidden>{{ t('map.zoom') }}</div>
 
-        <aside id="nav-panel" class="nav-panel hidden" aria-label="Cycling route planner">
+        <aside id="nav-panel" class="nav-panel hidden" aria-label="{{ t('map.plan') }}">
             <div class="nav-panel-head"><h2>{{ t('map.plan') }}</h2></div>
             <div class="nav-section">
-                <strong>Waypoints</strong>
+                <strong>{{ t('map.waypoints') }}</strong>
                 <div id="wp-list"></div>
             </div>
             <div class="nav-section">
                 <div class="nav-row">
-                    <input id="wp-search-input" type="search" placeholder="Search address or place" autocomplete="off">
-                    <button id="wp-search-btn" title="Add address" aria-label="Add searched address">+</button>
+                    <input id="wp-search-input" type="search" placeholder="{{ t('map.search') }}" autocomplete="off">
+                    <button id="wp-search-btn" title="{{ t('map.add_address') }}" aria-label="{{ t('map.add_address') }}">+</button>
                 </div>
                 <div class="nav-row nav-row-wrap" style="margin-top:8px">
-                    <button id="use-location-btn" class="nav-btn-sec" type="button">Use my location</button>
-                    <button id="map-click-add-btn" class="nav-btn-sec" type="button">Select on map</button>
+                    <button id="use-location-btn" class="nav-btn-sec" type="button">{{ t('map.use_location') }}</button>
+                    <button id="map-click-add-btn" class="nav-btn-sec" type="button">{{ t('map.select_map') }}</button>
                 </div>
             </div>
             <div class="nav-section">
-                <strong>Add a useful stop</strong>
+                <strong>{{ t('map.useful_stop') }}</strong>
                 <div class="nav-row nav-row-wrap">
-                    <button id="add-nearest-fountain-btn" class="nav-btn-sec" type="button" disabled>Nearest fountain</button>
-                    <button id="add-nearest-parking-btn" class="nav-btn-sec" type="button" disabled>Nearest parking</button>
+                    <button id="add-nearest-fountain-btn" class="nav-btn-sec" type="button" disabled>{{ t('map.nearest_fountain') }}</button>
+                    <button id="add-nearest-parking-btn" class="nav-btn-sec" type="button" disabled>{{ t('map.nearest_parking') }}</button>
                 </div>
             </div>
             <div class="nav-section">
                 <div class="nav-row">
-                    <button id="calc-route-btn" class="nav-btn-primary" type="button" disabled>Calculate route</button>
-                    <button id="clear-route-btn" class="nav-btn-danger" type="button">Clear</button>
+                    <button id="calc-route-btn" class="nav-btn-primary" type="button" disabled>{{ t('map.calculate') }}</button>
+                    <button id="clear-route-btn" class="nav-btn-danger" type="button">{{ t('map.clear') }}</button>
                 </div>
                 <p id="nav-msg" class="nav-msg" aria-live="polite"></p>
             </div>
@@ -74,10 +74,24 @@
 {% block footer %}{% endblock %}
 
 {% block scripts %}
+<script>window.ROR_MAP_COPY = {{ {
+    'plan': t('map.plan'), 'close': t('map.close'), 'fountains': t('map.fountains'),
+    'repair': t('map.repair'), 'toilets': t('map.toilets'), 'parking': t('map.parking'),
+    'zoom': t('map.zoom'), 'chooseFilter': t('map.choose_filter'), 'loading': t('map.loading'),
+    'loadError': t('map.load_error'), 'noStops': t('map.no_stops'),
+    'locationWait': t('map.location_wait'), 'currentLocation': t('map.current_location'),
+    'emptyWaypoints': t('map.empty_waypoints'), 'noResults': t('map.no_results'),
+    'searchError': t('map.search_error'), 'routeNotFound': t('map.route_not_found'),
+    'routeError': t('map.route_error'), 'fetchError': t('map.fetch_error'),
+    'searching': t('map.searching'), 'calculating': t('map.calculating'),
+    'looking': t('map.looking'), 'remove': t('map.remove'),
+    'addWaypoint': t('map.add_waypoint'), 'openingHours': t('map.opening_hours'),
+    'noNearby': t('map.no_nearby')
+}|tojson }};</script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="{{ url_for('static', filename='map/js/geohash.js') }}"></script>
-<script src="{{ url_for('static', filename='map/js/map.js', v='4') }}"></script>
+<script src="{{ url_for('static', filename='map/js/map.js', v='5') }}"></script>
 {% if group_id and members %}
 <script>
 (function () {
