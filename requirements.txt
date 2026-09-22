@@ -24,6 +24,7 @@ passlib==1.7.4
 psycopg==3.3.4
 psycopg-binary==3.3.4
 python-dotenv==1.2.3
+python-codicefiscale==0.12.1
 requests==2.34.2
 SQLAlchemy==2.0.52
 typing_extensions==4.16.0

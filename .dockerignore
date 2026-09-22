@@ -1,12 +1,14 @@
 .venv/
 .ruff_cache/
 .pytest_cache/
+pytest-cache-files-*/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .git/
 .gitignore
+app-demo-main/
 .env
 .env.*
 !.env.example

@@ -16,84 +16,142 @@
     </section>
 
     <section class="auth-form-wrap">
-        <div class="auth-form">
+        <div class="auth-form registration-wizard">
             <span class="eyebrow">Create profile</span>
             <h2>Get on the road</h2>
-            <p>Enter your details to create your private rider workspace.</p>
+            <p>A short, guided setup. Fields marked <span class="required-mark" aria-hidden="true">*</span> are required.</p>
 
-            <form method="POST" action="{{ url_for('security.register') }}">
+            <ol class="registration-progress" aria-label="Registration progress">
+                <li class="is-active" data-step-indicator="1"><span>1</span><small>About you</small></li>
+                <li data-step-indicator="2"><span>2</span><small>Identity</small></li>
+                <li data-step-indicator="3"><span>3</span><small>Access</small></li>
+            </ol>
+
+            <form method="POST" action="{{ url_for('security.register') }}" data-registration-form novalidate>
                 {{ register_user_form.hidden_tag() }}
 
-                <div class="field-row">
-                    <div class="field">
-                        <label for="username">Username</label>
-                        {{ register_user_form.username(autocomplete="username", placeholder="rider_name") }}
-                        {% for error in register_user_form.username.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                <section class="registration-step" data-step-panel="1" aria-labelledby="registration-step-1-title">
+                    <div class="registration-step-heading">
+                        <span>Step 1 of 3</span>
+                        <h3 id="registration-step-1-title">Tell us about yourself</h3>
+                        <p>These details are used to verify your identity.</p>
                     </div>
-                    <div class="field">
-                        <label for="email">Email</label>
-                        {{ register_user_form.email(autocomplete="email", placeholder="you@example.com") }}
-                        {% for error in register_user_form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-                    </div>
-                </div>
 
-                <div class="field-row">
-                    <div class="field">
-                        <label for="full_name">Full name</label>
-                        {{ register_user_form.full_name(autocomplete="name", placeholder="Your full name") }}
-                        {% for error in register_user_form.full_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="first_name">First name <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.first_name(autocomplete="given-name", placeholder="Mario", required=true, minlength="2", maxlength="100", autofocus=true) }}
+                            {% for error in register_user_form.first_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="field">
+                            <label for="last_name">Last name <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.last_name(autocomplete="family-name", placeholder="Rossi", required=true, minlength="2", maxlength="100") }}
+                            {% for error in register_user_form.last_name.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
                     </div>
-                    <div class="field">
-                        <label for="phone_number">Phone number</label>
-                        {{ register_user_form.phone_number(autocomplete="tel", placeholder="+39 ...") }}
-                        {% for error in register_user_form.phone_number.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-                    </div>
-                </div>
 
-                <div class="field-row">
-                    <div class="field">
-                        <label for="tax_id_code">Tax ID code</label>
-                        {{ register_user_form.tax_id_code(placeholder="Fiscal identifier") }}
-                        {% for error in register_user_form.tax_id_code.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="date_of_birth">Date of birth <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.date_of_birth(autocomplete="bday", required=true) }}
+                            {% for error in register_user_form.date_of_birth.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="field">
+                            <label for="gender">Gender <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.gender(autocomplete="sex", required=true) }}
+                            {% for error in register_user_form.gender.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
                     </div>
-                    <div class="field">
-                        <label for="date_of_birth">Date of birth</label>
-                        {{ register_user_form.date_of_birth() }}
-                        {% for error in register_user_form.date_of_birth.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-                    </div>
-                </div>
 
-                <div class="field-row">
                     <div class="field">
-                        <label for="gender">Gender</label>
-                        {{ register_user_form.gender() }}
-                        {% for error in register_user_form.gender.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-                    </div>
-                    <div class="field">
-                        <label for="birth_city_country">City / country of birth</label>
-                        {{ register_user_form.birth_city_country(placeholder="Milan, Italy") }}
+                        <label for="birth_city_country">City or country of birth <span class="required-mark" aria-hidden="true">*</span></label>
+                        {{ register_user_form.birth_city_country(autocomplete="off", placeholder="Milan or France", required=true, minlength="2", maxlength="200") }}
+                        <span class="field-hint">Enter the official Italian municipality or foreign country name.</span>
                         {% for error in register_user_form.birth_city_country.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
                     </div>
-                </div>
 
-                <div class="field-row">
-                    <div class="field">
-                        <label for="password">Password</label>
-                        {{ register_user_form.password(autocomplete="new-password", placeholder="Create a password") }}
-                        {% for error in register_user_form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    <div class="registration-actions registration-actions-end">
+                        <button class="btn btn-primary" type="button" data-next-step>Continue</button>
                     </div>
-                    <div class="field">
-                        <label for="password_confirm">Confirm password</label>
-                        {{ register_user_form.password_confirm(autocomplete="new-password", placeholder="Repeat your password") }}
-                        {% for error in register_user_form.password_confirm.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
-                    </div>
-                </div>
+                </section>
 
-                <button class="btn btn-primary btn-block" type="submit">Create account</button>
+                <section class="registration-step" data-step-panel="2" aria-labelledby="registration-step-2-title" hidden>
+                    <div class="registration-step-heading">
+                        <span>Step 2 of 3</span>
+                        <h3 id="registration-step-2-title">Verify your identity</h3>
+                        <p>Your tax ID code must match the personal details from the previous step.</p>
+                    </div>
+
+                    <div class="field">
+                        <label for="tax_id_code">Italian tax ID code <span class="required-mark" aria-hidden="true">*</span></label>
+                        {{ register_user_form.tax_id_code(autocomplete="off", placeholder="RSSMRA80E20F205I", required=true, minlength="16", maxlength="16", pattern="[A-Za-z0-9]{16}", class="uppercase-input") }}
+                        <span class="field-hint">We verify the check digit, birth date, gender and place of birth before creating the account.</span>
+                        {% for error in register_user_form.tax_id_code.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    </div>
+
+                    <div class="field">
+                        <label for="phone_number">Phone number <span class="optional-mark">Optional</span></label>
+                        {{ register_user_form.phone_number(autocomplete="tel", placeholder="+39 333 1234567") }}
+                        {% for error in register_user_form.phone_number.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                    </div>
+
+                    <div class="registration-note">
+                        <strong>Privacy by design</strong>
+                        <span>Your identity data is used only to create and protect your rider account.</span>
+                    </div>
+
+                    <div class="registration-actions">
+                        <button class="btn btn-secondary" type="button" data-prev-step>Back</button>
+                        <button class="btn btn-primary" type="button" data-next-step>Continue</button>
+                    </div>
+                </section>
+
+                <section class="registration-step" data-step-panel="3" aria-labelledby="registration-step-3-title" hidden>
+                    <div class="registration-step-heading">
+                        <span>Step 3 of 3</span>
+                        <h3 id="registration-step-3-title">Create your access</h3>
+                        <p>Choose the credentials you will use to sign in.</p>
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="username">Username <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.username(autocomplete="username", placeholder="rider_name", required=true) }}
+                            {% for error in register_user_form.username.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="field">
+                            <label for="email">Email <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.email(autocomplete="email", placeholder="you@example.com", required=true) }}
+                            {% for error in register_user_form.email.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="field-row">
+                        <div class="field">
+                            <label for="password">Password <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.password(autocomplete="new-password", placeholder="At least 8 characters", required=true, minlength="8") }}
+                            {% for error in register_user_form.password.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                        <div class="field">
+                            <label for="password_confirm">Confirm password <span class="required-mark" aria-hidden="true">*</span></label>
+                            {{ register_user_form.password_confirm(autocomplete="new-password", placeholder="Repeat your password", required=true, minlength="8") }}
+                            {% for error in register_user_form.password_confirm.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="registration-actions">
+                        <button class="btn btn-secondary" type="button" data-prev-step>Back</button>
+                        <button class="btn btn-primary" type="submit">Create account</button>
+                    </div>
+                </section>
             </form>
 
             <p class="auth-switch">Already have an account? <a href="{{ url_for('security.login') }}">Log in</a></p>
         </div>
     </section>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/register.js') }}" defer></script>
 {% endblock %}

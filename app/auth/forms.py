@@ -1,6 +1,7 @@
+from codicefiscale import codicefiscale
 from flask_security import RegisterFormV2
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, DateField, PasswordField, SelectField, StringField
+from wtforms import BooleanField, DateField, HiddenField, PasswordField, SelectField, StringField
 from wtforms.validators import (
     DataRequired,
     Email,
@@ -14,14 +15,50 @@ from wtforms.validators import (
 
 def validate_tax_id_code(form, field):
     cf = str(field.data or '').upper().strip()
-    if len(cf) != 16:
-        raise ValidationError('The tax ID code must be 16 characters long.')
-    if not cf[:6].isalpha() or not cf[6:8].isdigit() or not cf[8].isalpha() or not cf[9:11].isdigit() or not cf[11].isalpha() or not cf[12:15].isdigit() or not cf[15].isalpha():
-        raise ValidationError('Invalid tax ID code format.')
+    if not codicefiscale.is_valid(cf):
+        raise ValidationError('Enter a valid Italian tax ID code.')
+
+    required_details = (
+        form.first_name.data,
+        form.last_name.data,
+        form.date_of_birth.data,
+        form.gender.data,
+        form.birth_city_country.data,
+    )
+    if not all(required_details):
+        return
+
+    try:
+        expected = codicefiscale.encode(
+            lastname=form.last_name.data.strip(),
+            firstname=form.first_name.data.strip(),
+            gender=form.gender.data,
+            birthdate=form.date_of_birth.data.isoformat(),
+            birthplace=form.birth_city_country.data.strip(),
+        )
+        accepted_codes = set(codicefiscale.decode(expected)['omocodes'])
+    except (KeyError, TypeError, ValueError):
+        raise ValidationError(
+            'The place of birth could not be verified. Enter an Italian municipality or a foreign country.'
+        )
+
+    if cf not in accepted_codes:
+        raise ValidationError('The tax ID code does not match the personal details entered.')
 
 
 class ExtendedRegisterForm(RegisterFormV2):
     """Extended registration form with additional fields."""
+    first_name = StringField(
+        'First Name',
+        validators=[DataRequired(message='First name is required.'), Length(min=2, max=100)],
+        render_kw={'placeholder': 'Mario'}
+    )
+    last_name = StringField(
+        'Last Name',
+        validators=[DataRequired(message='Last name is required.'), Length(min=2, max=100)],
+        render_kw={'placeholder': 'Rossi'}
+    )
+    full_name = HiddenField()
     tax_id_code = StringField(
         'Tax ID Code',
         validators=[
@@ -32,11 +69,6 @@ class ExtendedRegisterForm(RegisterFormV2):
         ],
         render_kw={'placeholder': 'RSSMRA85T10A562S'},
         filters=[lambda x: x.upper() if x else x]
-    )
-    full_name = StringField(
-        'Full Name',
-        validators=[DataRequired(message='Full name is required.'), Length(min=2, max=200)],
-        render_kw={'placeholder': 'Mario Rossi'}
     )
     date_of_birth = DateField(
         'Date of Birth',
@@ -70,6 +102,13 @@ class ExtendedRegisterForm(RegisterFormV2):
         ],
         render_kw={'placeholder': '+39 333 1234567'}
     )
+
+    def validate(self, **kwargs):
+        """Persist the split name fields using the existing full_name model column."""
+        first_name = str(self.first_name.data or '').strip()
+        last_name = str(self.last_name.data or '').strip()
+        self.full_name.data = f'{first_name} {last_name}'.strip()
+        return super().validate(**kwargs)
 
     # Override username validator for clearer messages
     @classmethod
