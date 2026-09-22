@@ -1,5 +1,5 @@
 (function () {
-  const ZOOM_THRESHOLD = 14;
+  const ZOOM_THRESHOLD = 13;
   const DEBOUNCE_MS = 150;
   const GEOHASH_PRECISION = 5;
 
@@ -26,9 +26,11 @@
   // ── Cluster groups per entità ──────────────────────────────────────────────
   const clusterGroups = {};
   const requestedGeohashes = {};
+  const loadingGeohashes = {};
   Object.keys(ENTITY_CONFIG).forEach((type) => {
     clusterGroups[type] = L.markerClusterGroup();
     requestedGeohashes[type] = new Set();
+    loadingGeohashes[type] = new Set();
   });
 
   function getSelectedOverlays() {
@@ -45,7 +47,6 @@
       iconSize: [16, 16],
     });
     const marker = L.marker([item.lat, item.lng], { icon });
-    marker.bindPopup(popupContent(type, item));
 
     // Add to navigator as waypoint if in nav mode
     marker.on("click", () => {
@@ -79,8 +80,12 @@
   async function fetchEntityType(type, geohashes) {
     const config = ENTITY_CONFIG[type];
     const response = await fetch(`${config.url}?gh5=${geohashes.join(",")}`);
-    if (!response.ok) return [];
-    return response.json();
+    if (!response.ok) {
+      throw new Error(`${config.label} request failed (${response.status})`);
+    }
+    const data = await response.json();
+    if (!Array.isArray(data)) throw new Error(`${config.label} response is invalid`);
+    return data;
   }
 
   function boundsToGeohashes(bounds) {
@@ -92,39 +97,88 @@
   }
 
   let debounceTimer = null;
+  let updateSequence = 0;
   function scheduleUpdate() {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(updateVisibleEntities, DEBOUNCE_MS);
   }
 
   async function updateVisibleEntities() {
+    const sequence = ++updateSequence;
     const zoom = map.getZoom();
-    const zoomHint = document.getElementById("zoom-hint");
     const selected = getSelectedOverlays();
 
     Object.entries(clusterGroups).forEach(([type, group]) => {
       if (!selected.includes(type) && map.hasLayer(group)) map.removeLayer(group);
     });
 
-    if (zoom < ZOOM_THRESHOLD) {
-      zoomHint.hidden = false;
+    if (selected.length === 0) {
+      showMapHint("Choose a filter to show rider stops");
       return;
     }
-    zoomHint.hidden = true;
+
+    if (zoom < ZOOM_THRESHOLD) {
+      showMapHint("Zoom in to reveal nearby rider stops");
+      return;
+    }
+
+    showMapHint("Loading nearby rider stops…");
 
     const geohashes = boundsToGeohashes(map.getBounds());
-
+    let hadError = false;
     await Promise.all(
       selected.map(async (type) => {
-        const toFetch = geohashes.filter((gh) => !requestedGeohashes[type].has(gh));
+        const toFetch = geohashes.filter(
+          (gh) => !requestedGeohashes[type].has(gh) && !loadingGeohashes[type].has(gh),
+        );
         if (toFetch.length > 0) {
-          toFetch.forEach((gh) => requestedGeohashes[type].add(gh));
-          const items = await fetchEntityType(type, toFetch);
-          items.forEach((item) => clusterGroups[type].addLayer(markerFor(type, item)));
+          toFetch.forEach((gh) => loadingGeohashes[type].add(gh));
+          try {
+            const items = await fetchEntityType(type, toFetch);
+            items.forEach((item) => clusterGroups[type].addLayer(markerFor(type, item)));
+            toFetch.forEach((gh) => requestedGeohashes[type].add(gh));
+          } catch (error) {
+            hadError = true;
+            console.error("Unable to load map points:", error);
+          } finally {
+            toFetch.forEach((gh) => loadingGeohashes[type].delete(gh));
+          }
         }
         if (!map.hasLayer(clusterGroups[type])) map.addLayer(clusterGroups[type]);
       }),
     );
+
+    if (sequence !== updateSequence) return;
+    if (hadError) {
+      showMapHint("Some map data could not be loaded. Move the map to retry.", true);
+      return;
+    }
+
+    const visibleBounds = map.getBounds();
+    const visibleCount = selected.reduce(
+      (total, type) => total + clusterGroups[type].getLayers().filter(
+        (marker) => visibleBounds.contains(marker.getLatLng()),
+      ).length,
+      0,
+    );
+    if (visibleCount === 0) {
+      showMapHint("No selected rider stops in this area");
+    } else {
+      hideMapHint();
+    }
+  }
+
+  function showMapHint(message, isError = false) {
+    const hint = document.getElementById("zoom-hint");
+    hint.textContent = message;
+    hint.classList.toggle("is-error", isError);
+    hint.hidden = false;
+  }
+
+  function hideMapHint() {
+    const hint = document.getElementById("zoom-hint");
+    hint.hidden = true;
+    hint.classList.remove("is-error");
   }
 
   map.on("moveend zoomend load", scheduleUpdate);

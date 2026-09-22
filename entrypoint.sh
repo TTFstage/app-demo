@@ -31,6 +31,15 @@ echo "[OK] PostgreSQL is up and responding at $DB_HOST:$DB_PORT."
 echo "[MIGRATE] Running 'flask db upgrade'..."
 flask db upgrade
 
+# Seed the local OpenStreetMap extracts used by the map filters. The importer
+# is idempotent, so restarts only add records that are not already present.
+if [ "${IMPORT_MAP_DATA:-true}" = "true" ]; then
+    echo "[MAP] Importing map points of interest..."
+    if ! python scripts/import_map_data.py; then
+        echo "[WARN] Map data import failed; starting the application without points of interest."
+    fi
+fi
+
 # Start the application by replacing the shell process with Gunicorn (PID 1)
 echo "[START] Starting Gunicorn with 4 workers on 0.0.0.0:8000..."
 exec gunicorn -w 4 -b 0.0.0.0:8000 wsgi:app

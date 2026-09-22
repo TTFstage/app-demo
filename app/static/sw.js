@@ -1,4 +1,4 @@
-const CACHE_NAME = "ror-shell-v2";
+const CACHE_NAME = "ror-shell-v4";
 const SHELL = [
   "/offline",
   "/static/style.css",
@@ -32,11 +32,13 @@ self.addEventListener("fetch", (event) => {
   }
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
-        return response;
-      })),
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(() => caches.match(request)),
     );
   }
 });
