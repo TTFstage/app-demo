@@ -2,7 +2,9 @@
 {% block title %}{{ t('analytics.title') }}{% endblock %}
 
 {% block head %}
+{% if shifts %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -15,6 +17,7 @@
 </section>
 
 <section class="container analytics-grid">
+    {% if shifts %}
     <div class="analytics-map-card">
         <div class="field">
             <label for="shiftSelect">{{ t('analytics.completed') }}</label>
@@ -46,10 +49,21 @@
         <div class="stat-item"><span>Elevation gain</span><span id="gpxElevationGain">—</span></div>
         <div class="stat-item"><span>Elevation loss</span><span id="gpxElevationLoss">—</span></div>
     </aside>
+    {% else %}
+    <div class="analytics-empty">
+        <div>
+            <span class="empty-icon" aria-hidden="true">◎</span>
+            <h2>{{ t('analytics.empty') }}</h2>
+            <p>{{ t('analytics.empty_help') }}</p>
+            <a class="btn btn-primary" href="{{ url_for('core.index') }}">{{ t('home.start_tracking') }}</a>
+        </div>
+    </div>
+    {% endif %}
 </section>
 {% endblock %}
 
 {% block scripts %}
+{% if shifts %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-gpx/1.7.0/gpx.min.js"></script>
 <script>
@@ -96,4 +110,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 </script>
+{% endif %}
 {% endblock %}

@@ -8,10 +8,12 @@
             <h1>{{ t('groups.heading') }}</h1>
             <p>{{ t('groups.intro') }}</p>
         </div>
+        {% if memberships %}
         <div class="button-row">
             <a class="btn btn-secondary" href="{{ url_for('group.join') }}">{{ t('groups.join_code') }}</a>
             <a class="btn btn-primary" href="{{ url_for('group.create') }}">{{ t('groups.create') }}</a>
         </div>
+        {% endif %}
     </div>
 </section>
 
