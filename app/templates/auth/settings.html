@@ -45,6 +45,14 @@
 
     <aside class="settings-side">
         <div class="settings-side-card"><span class="eyebrow">{{ t('settings.account') }}</span><a href="{{ url_for('auth.edit_profile') }}">{{ t('settings.edit_profile') }} <span>→</span></a><a href="{{ url_for('auth.change_password') }}">{{ t('settings.change_password') }} <span>→</span></a><a href="{{ url_for('auth.onboarding') }}">{{ t('settings.device_setup') }} <span>→</span></a></div>
+        <div class="settings-side-card settings-danger-card" id="delete-account">
+            <span class="eyebrow">{{ t('profile.delete_heading') }}</span>
+            <p>{{ t('profile.delete_help') }}</p>
+            <form method="POST" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm({{ t('profile.delete_confirm')|tojson }});">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-danger btn-block" type="submit">{{ t('profile.delete') }}</button>
+            </form>
+        </div>
         <div class="settings-side-card"><span class="eyebrow">{{ t('settings.install') }}</span><h2>{{ t('settings.install_heading') }}</h2><p>{{ t('settings.install_help') }}</p><button class="btn btn-primary btn-block" type="button" data-install-app disabled>{{ t('settings.install_button') }}</button><span id="install-state" class="device-note">{{ t('settings.install_availability') }}</span></div>
         <div class="settings-side-card"><span class="eyebrow">{{ t('settings.app') }}</span><p><strong>Rider on Road</strong><br>Web app · version 1.0</p><p class="device-note">{{ t('settings.emergency_note') }}</p></div>
     </aside>

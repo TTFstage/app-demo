@@ -20,7 +20,7 @@ from app.auth.forms import (
     ProfileForm,
     SOSContactForm,
 )
-from app.auth.models import SOSContact, User, UserPreference
+from app.auth.models import SOSContact, User, UserPreference, linked_bike_if_available
 from app.i18n import translate
 from extensions import db, redis_client, security
 
@@ -60,6 +60,9 @@ def me():
         date_of_birth=current_user.date_of_birth,
         gender=current_user.gender,
         birth_city_country=current_user.birth_city_country,
+        tax_id_masked=(current_user.tax_id_code[:3] + '••••••••••' + current_user.tax_id_code[-3:]) if current_user.tax_id_code else '',
+        bike=linked_bike_if_available(current_user),
+        sos_contacts_count=SOSContact.query.filter_by(user_id=current_user.id).count(),
         onboarding_completed=preferences.onboarding_completed,
     )
 

@@ -5,6 +5,7 @@ import uuid
 from datetime import datetime, timezone
 
 from flask_security import RoleMixin, SQLAlchemyUserDatastore, UserMixin
+from sqlalchemy import inspect
 from sqlalchemy.orm import validates
 
 from extensions import db
@@ -95,6 +96,18 @@ class BikeTracking(db.Model):
     gpx_path = db.Column(db.String(512), nullable=True)
 
     bike = db.relationship('Bike', back_populates='tracking_sessions')
+
+
+def bike_storage_available():
+    """Return whether the bike migration has been applied."""
+    return inspect(db.engine).has_table(Bike.__tablename__)
+
+
+def linked_bike_if_available(user):
+    """Keep pages usable until the bike schema is migrated."""
+    if not bike_storage_available():
+        return None
+    return user.bike
 
 class GroupMembership(db.Model):
     __tablename__ = 'group_memberships'

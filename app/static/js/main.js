@@ -547,7 +547,44 @@ window.addEventListener("pagehide", () => {
     persistQueues();
 });
 
+function updateHomeGpsPermission() {
+    const element = document.getElementById("home-gps-status");
+    if (!element) return;
+    const labels = window.ROR_HOME_COPY || {};
+    const badge = document.getElementById("home-ride-state-label");
+    const setBadge = (label) => {
+        if (badge) badge.textContent = settings.telemetryEnabled ? label : labels.badgeTelemetryOff;
+    };
+    if (!navigator.geolocation || !window.isSecureContext) {
+        element.textContent = labels.gpsUnavailable || "Unavailable";
+        setBadge(labels.badgeUnavailable);
+        return;
+    }
+    if (!navigator.permissions?.query) {
+        element.textContent = labels.gpsCheck || "Check at ride start";
+        setBadge(labels.badgeCheck);
+        return;
+    }
+    navigator.permissions.query({name: "geolocation"}).then((permission) => {
+        const render = () => {
+            element.textContent = permission.state === "granted"
+                ? labels.gpsAllowed
+                : permission.state === "denied" ? labels.gpsBlocked : labels.gpsCheck;
+            setBadge(permission.state === "granted"
+                ? labels.badgeAllowed
+                : permission.state === "denied" ? labels.badgeBlocked : labels.badgeCheck);
+            element.dataset.state = permission.state;
+        };
+        render();
+        permission.onchange = render;
+    }).catch(() => {
+        element.textContent = labels.gpsCheck || "Check at ride start";
+        setBadge(labels.badgeCheck);
+    });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    updateHomeGpsPermission();
     if (window.RIDER_ID && document.getElementById("ride-screen")) {
         try {
             const saved = JSON.parse(localStorage.getItem(ACTIVE_KEY) || "null");

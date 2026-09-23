@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ t('nav.home') }}{% endblock %}
+{% block body_class %}home-page{% endblock %}
 {% block head %}{% if current_user.is_authenticated %}<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">{% endif %}{% endblock %}
 
 {% block content %}
@@ -9,79 +10,58 @@
         <div class="dashboard-head">
             <div>
                 <span class="eyebrow">{{ t('home.dashboard') }}</span>
-                <h1>{{ t('home.ready', name=current_user.username) }}</h1>
+                <h1>{{ t('home.greeting', name=first_name) }}</h1>
                 <p>{{ t('home.intro') }}</p>
             </div>
-            <a class="btn btn-secondary" href="{{ url_for('map_pages.home') }}">{{ t('home.open_map') }} <span aria-hidden="true">→</span></a>
         </div>
 
-        <div class="dashboard-grid">
-            <section id="session-section" class="ride-console" aria-labelledby="ride-console-title">
-                <div class="console-top">
-                    <span class="eyebrow">{{ t('home.live_ride') }}</span>
-                    <h2 id="ride-console-title">{{ t('home.track_shift') }}</h2>
-                    <p>{{ t('home.track_help') }}</p>
-                    <p class="home-ride-note">{{ t('ride.home_hint') }}</p>
+        <div class="home-dashboard-stack">
+            <aside class="home-weather-demo" aria-label="{{ t('home.weather_demo') }}">
+                <div class="home-weather-copy">
+                    <span class="home-weather-kicker">{{ t('home.weather_demo') }}</span>
+                    <strong>{{ t('home.weather_city') }}</strong>
+                    <span>{{ t('home.weather_condition') }}</span>
                 </div>
-                <div class="console-actions">
-                    <button class="btn btn-white" type="button" onclick="openRideScreen();"><span aria-hidden="true">●</span> {{ t('ride.open') }}</button>
-                    <a class="btn btn-secondary" href="{{ url_for('analytics.index') }}">{{ t('home.past_rides') }}</a>
+                <div class="home-weather-reading">
+                    <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="33" cy="30" r="11"/><path d="M33 4v7m0 38v7M7 30h7m38 0h7M14 11l5 5m28 28 5 5m0-38-5 5M19 44l-5 5"/></svg>
+                    <strong>22°C</strong>
+                </div>
+                <small>{{ t('home.weather_note') }}</small>
+            </aside>
+            <section id="session-section" class="ride-console home-overview-card" aria-labelledby="ride-console-title">
+                <div class="home-overview-intro">
+                    <span class="home-ride-state"><span class="home-ride-state-dot" aria-hidden="true"></span><span id="home-ride-state-label">{{ t('home.preparing') }}</span></span>
+                    <h2 id="ride-console-title">{{ t('home.ready_card') }}</h2>
+                    <p>{{ t('home.record_hint') }}</p>
+                </div>
+
+                <div class="home-bike-panel">
+                    <span class="home-bike-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="m5.5 17.5 4-9h3l6 9m-13 0h7l-3-9m-1-2h3m4 2h2"/></svg></span>
+                    <div class="home-bike-copy"><span class="home-panel-label">{{ t('profile.your_bike') }}</span><strong>{{ bike.bike_id if bike else t('home.bike_none') }}</strong><small>{{ t('profile.bike_distance', distance='%.1f'|format(bike.total_km or 0)) if bike else (t('home.bike_prompt') if bike_feature_available else t('profile.bike_none_help')) }}</small></div>
+                    {% if not bike %}
+                    <details class="home-bike-connect">
+                        <summary>{{ t('home.connect_bike') }}</summary>
+                        {% if bike_feature_available %}
+                        <form method="POST" action="{{ url_for('core.connect_bike') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <label for="home-bike-id">{{ t('home.bike_code') }}</label>
+                            <div class="home-bike-form-row"><input id="home-bike-id" name="bike_id" type="text" maxlength="32" pattern="[A-Za-z0-9_-]+" autocomplete="off" required placeholder="{{ t('home.bike_code_hint') }}"><button type="submit">{{ t('home.connect') }}</button></div>
+                        </form>
+                        {% else %}<p class="home-bike-unavailable">{{ t('home.bike_unavailable') }}</p>{% endif %}
+                    </details>
+                    {% endif %}
+                </div>
+
+                <div class="home-readiness" aria-label="{{ t('home.ride_check') }}">
+                    <a href="{{ url_for('analytics.index') }}"><span>{{ t('ride.latest') }}</span><strong>{{ '%.1f'|format(shifts[0].total_distance_km or 0) ~ ' km' if shifts else t('home.no_rides') }}</strong></a>
+                    <div><span>GPS</span><strong id="home-gps-status" aria-live="polite">{{ t('home.gps_checking') }}</strong></div>
+                    <a href="{{ url_for('auth.settings') }}#safety-settings"><span>{{ t('home.fall_detection') }}</span><strong>{{ t('home.enabled') if not preferences or preferences.fall_detection_enabled else t('home.disabled') }}</strong></a>
+                </div>
+                <div class="home-overview-footer">
+                    <span class="home-mobile-start-hint">{{ t('home.tap_record') }}</span>
+                    <button class="btn btn-white home-desktop-start" type="button" onclick="openRideScreen();">{{ t('ride.open') }}</button>
                 </div>
             </section>
-
-            <div class="quick-stack">
-                {% if not preferences or not preferences.onboarding_completed %}
-                <a class="quick-card quick-card-setup" href="{{ url_for('auth.onboarding') }}">
-                    <span class="quick-card-label">One-minute setup</span>
-                    <h3>Check this phone before your first ride.</h3>
-                    <span class="quick-card-arrow" aria-hidden="true">→</span>
-                </a>
-                {% endif %}
-                <a class="quick-card" href="{{ url_for('group.index') }}">
-                    <span class="quick-card-label">{{ t('home.your_crew') }}</span>
-                    <h3>{{ t('home.crew_help') }}</h3>
-                    <span class="quick-card-arrow" aria-hidden="true">→</span>
-                </a>
-                <a class="quick-card quick-card-safety" href="{{ url_for('auth.list_sos_contacts') }}">
-                    <span class="quick-card-label">{{ t('home.safety_setup') }}</span>
-                    <h3>{{ t('home.safety_help') }}</h3>
-                    <span class="quick-card-arrow" aria-hidden="true">→</span>
-                </a>
-            </div>
-        </div>
-        <a class="home-route-card" href="{{ url_for('analytics.index') if shifts else url_for('map_pages.home') }}">
-            <span class="home-route-art" aria-hidden="true"><i></i><b></b><em></em></span>
-            <span class="home-route-copy"><span class="eyebrow">{{ t('ride.latest') if shifts else t('nav.map') }}</span><strong>{% if shifts %}{{ shifts[0].total_distance_km | default(0, true) | round(2) }} km{% else %}{{ t('ride.next_title') }}{% endif %}</strong><small>{% if shifts %}{{ shifts[0].created_at.strftime('%d/%m/%Y · %H:%M') }}{% else %}{{ t('ride.next_help') }}{% endif %}</small></span>
-            <span class="home-route-arrow" aria-hidden="true">↗</span>
-        </a>
-    </div>
-</section>
-
-<section class="page-section section-soft" id="safety">
-    <div class="container">
-        <div class="section-heading">
-            <div>
-                <span class="eyebrow">Safety by design</span>
-                <h2 class="section-title">Protection that stays in the background.</h2>
-            </div>
-            <p>Motion sensing and GPS work together during an active shift. If RoR detects a possible fall, you get ten seconds to cancel the alert.</p>
-        </div>
-        <div class="feature-grid">
-            <article class="feature-card">
-                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8"/></svg></span>
-                <h3>Adaptive tracking</h3>
-                <p>High precision while moving, lighter sampling when you stop.</p>
-            </article>
-            <article class="feature-card">
-                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s8-4.5 8-11V5l-8-2-8 2v5c0 6.5 8 11 8 11Z"/><path d="m9 12 2 2 4-5"/></svg></span>
-                <h3>Fall detection</h3>
-                <p>On-device sensor analysis watches for incident patterns during a ride.</p>
-            </article>
-            <article class="feature-card">
-                <span class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6m-3-3h6"/></svg></span>
-                <h3>Your safety circle</h3>
-                <p>Store up to five trusted contacts and order them by priority.</p>
-            </article>
         </div>
     </div>
 </section>
@@ -212,6 +192,13 @@ window.ROR_SETTINGS = {
     highAccuracyGps: {{ (preferences.high_accuracy_gps if preferences else true)|tojson }},
     browserNotificationsEnabled: {{ (preferences.browser_notifications_enabled if preferences else false)|tojson }}
 };
+window.ROR_HOME_COPY = {{ {
+    'gpsAllowed': t('home.gps_allowed'), 'gpsBlocked': t('home.gps_blocked'),
+    'gpsCheck': t('home.gps_check'), 'gpsUnavailable': t('home.gps_unavailable'),
+    'badgeAllowed': t('home.badge_gps_allowed'), 'badgeBlocked': t('home.badge_gps_blocked'),
+    'badgeCheck': t('home.badge_gps_check'), 'badgeUnavailable': t('home.badge_gps_unavailable'),
+    'badgeTelemetryOff': t('home.badge_telemetry_off')
+}|tojson }};
 window.ROR_RIDE_COPY = {{ {
     'ready': t('ride.ready'), 'live': t('ride.live'), 'paused': t('ride.paused'),
     'waiting': t('ride.waiting'), 'locked': t('ride.locked'), 'unavailable': t('ride.unavailable'),

@@ -1,54 +1,65 @@
 {% extends "base.html" %}
 {% block title %}{{ t('profile.title') }}{% endblock %}
+{% block body_class %}profile-page{% endblock %}
 
 {% block content %}
-<section class="page-hero">
-    <div class="container">
-        <h1>{{ t('profile.heading') }}</h1>
-        <p>{{ t('profile.intro') }}</p>
+<section class="profile-hero">
+    <div class="container profile-identity">
+        <span class="profile-avatar" aria-hidden="true">{{ (full_name or username)[:1]|upper }}</span>
+        <div class="profile-identity-copy">
+            <span class="eyebrow">{{ t('profile.title') }}</span>
+            <h1>{{ full_name or username }}</h1>
+            <p>@{{ username }}</p>
+        </div>
+        <a class="profile-edit-link" href="{{ url_for('auth.edit_profile') }}">{{ t('settings.edit_profile') }} <span aria-hidden="true">↗</span></a>
     </div>
 </section>
 
 <section class="container profile-layout">
-    <div class="content-card">
-        <span class="eyebrow">{{ t('profile.details') }}</span>
-        <dl class="profile-grid">
-            <div class="profile-item"><dt>{{ t('profile.username') }}</dt><dd>{{ username }}</dd></div>
-            <div class="profile-item"><dt>Email</dt><dd>{{ email }}</dd></div>
-            <div class="profile-item"><dt>{{ t('profile.phone') }}</dt><dd>{{ phone_number if phone_number else t('profile.not_set') }}</dd></div>
-            <div class="profile-item"><dt>{{ t('profile.tax_id') }}</dt><dd>{{ tax_id_code }}</dd></div>
-            <div class="profile-item"><dt>{{ t('profile.full_name') }}</dt><dd>{{ full_name }}</dd></div>
-            <div class="profile-item"><dt>{{ t('profile.birth_date') }}</dt><dd>{{ date_of_birth }}</dd></div>
-            <div class="profile-item"><dt>{{ t('profile.gender') }}</dt><dd>{{ gender }}</dd></div>
-            <div class="profile-item"><dt>{{ t('profile.birth_place') }}</dt><dd>{{ birth_city_country }}</dd></div>
-        </dl>
-    </div>
-    <aside class="account-actions">
-        <div class="account-panel">
-            <h2>{{ t('profile.controls') }}</h2>
-            <p>{{ t('profile.controls_help') }}</p>
-            <div class="button-stack">
-                <a class="btn btn-primary btn-block" href="{{ url_for('auth.edit_profile') }}">{{ t('settings.edit_profile') }}</a>
-                <a class="btn btn-secondary btn-block" href="{{ url_for('auth.change_password') }}">{{ t('settings.change_password') }}</a>
-                <a class="btn btn-secondary btn-block" href="{{ url_for('auth.settings') }}">{{ t('profile.settings') }}</a>
-            </div>
-            {% if not onboarding_completed %}<a class="text-link" href="{{ url_for('auth.onboarding') }}">Complete device setup →</a>{% endif %}
+    <div class="profile-main">
+        <div class="profile-highlights">
+            <article class="profile-highlight profile-bike-card">
+                <span class="profile-highlight-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="m5.5 17.5 4-9h3l6 9m-13 0h7l-3-9m-1-2h3m4 2h2"/></svg></span>
+                <span class="eyebrow">{{ t('profile.your_bike') }}</span>
+                <h2>{{ bike.bike_id if bike else t('profile.bike_none') }}</h2>
+                <p>{{ t('profile.bike_distance', distance='%.1f'|format(bike.total_km or 0)) if bike else t('profile.bike_none_help') }}</p>
+            </article>
+            <a class="profile-highlight profile-safety-card" href="{{ url_for('auth.list_sos_contacts') }}">
+                <span class="profile-highlight-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 21s8-4.5 8-11V5l-8-2-8 2v5c0 6.5 8 11 8 11Z"/><path d="m9 12 2 2 4-5"/></svg></span>
+                <span class="eyebrow">{{ t('home.safety_setup') }}</span>
+                <h2>{{ t('profile.sos_contacts') }}</h2>
+                <p>{{ t('profile.contacts_one') if sos_contacts_count == 1 else t('profile.contacts_count', count=sos_contacts_count) }}</p>
+                <span class="profile-highlight-arrow" aria-hidden="true">↗</span>
+            </a>
         </div>
-        <div class="account-panel">
-            <h2>{{ t('profile.logout_heading') }}</h2>
-            <p>{{ t('profile.logout_help') }}</p>
+
+        <details class="profile-details-card">
+            <summary><span>{{ t('profile.details') }}</span><span class="profile-details-hint">{{ t('profile.details_hint') }}</span></summary>
+            <dl class="profile-grid">
+                <div class="profile-item"><dt>{{ t('profile.full_name') }}</dt><dd>{{ full_name }}</dd></div>
+                <div class="profile-item"><dt>Email</dt><dd>{{ email }}</dd></div>
+                <div class="profile-item"><dt>{{ t('profile.phone') }}</dt><dd>{{ phone_number if phone_number else t('profile.not_set') }}</dd></div>
+                <div class="profile-item"><dt>{{ t('profile.tax_id') }}</dt><dd>{{ tax_id_masked }}</dd></div>
+                <div class="profile-item"><dt>{{ t('profile.birth_date') }}</dt><dd>{{ date_of_birth }}</dd></div>
+                <div class="profile-item"><dt>{{ t('profile.gender') }}</dt><dd>{{ gender }}</dd></div>
+                <div class="profile-item"><dt>{{ t('profile.birth_place') }}</dt><dd>{{ birth_city_country }}</dd></div>
+            </dl>
+        </details>
+    </div>
+
+    <aside class="account-actions">
+        <div class="account-panel profile-controls">
+            <span class="eyebrow">{{ t('profile.controls') }}</span>
+            <a class="profile-action-link" href="{{ url_for('auth.settings') }}"><span>{{ t('profile.settings') }}</span><span aria-hidden="true">↗</span></a>
+            <a class="profile-action-link" href="{{ url_for('auth.change_password') }}"><span>{{ t('settings.change_password') }}</span><span aria-hidden="true">↗</span></a>
+            {% if not onboarding_completed %}<a class="profile-action-link" href="{{ url_for('auth.onboarding') }}"><span>{{ t('settings.device_setup') }}</span><span aria-hidden="true">↗</span></a>{% endif %}
+        </div>
+        <div class="account-panel profile-signout">
             <form method="POST" action="{{ url_for('security.logout') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-primary btn-block" type="submit">{{ t('profile.logout') }}</button>
+                <button class="profile-logout-button" type="submit">{{ t('profile.logout') }}</button>
             </form>
-        </div>
-        <div class="account-panel account-panel-danger">
-            <h2>{{ t('profile.delete_heading') }}</h2>
-            <p>{{ t('profile.delete_help') }}</p>
-            <form method="POST" action="{{ url_for('auth.delete_account') }}" onsubmit="return confirm({{ t('profile.delete_confirm')|tojson }});">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="btn btn-danger btn-block" type="submit">{{ t('profile.delete') }}</button>
-            </form>
+            <a class="profile-danger-link" href="{{ url_for('auth.settings') }}#delete-account">{{ t('profile.delete_heading') }}</a>
         </div>
     </aside>
 </section>

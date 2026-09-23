@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 
 import requests
 from flask import (
@@ -19,7 +20,8 @@ from flask import (
 )
 from flask_security import current_user, login_required
 
-from app.auth.models import Bike, FallEvent, RiderShift, SOSAlert, SOSContact, UserPreference
+from app.auth.models import Bike, RiderShift, SOSAlert, SOSContact, UserPreference, bike_storage_available
+from app.i18n import translate
 from extensions import db
 
 core_bp = Blueprint('core', __name__)
@@ -27,38 +29,64 @@ core_bp = Blueprint('core', __name__)
 @core_bp.route("/")
 def index():
     shifts = []
-    falls = []
     preferences = None
+    bike = None
+    bike_feature_available = False
+    first_name = None
     if current_user.is_authenticated:
         shifts = RiderShift.query.filter_by(user_id=current_user.id).order_by(RiderShift.created_at.desc()).all()
-        falls = FallEvent.query.filter_by(user_id=current_user.id).order_by(FallEvent.timestamp.desc()).all()
         preferences = UserPreference.query.filter_by(user_id=current_user.id).first()
+        bike_feature_available = bike_storage_available()
+        bike = current_user.bike if bike_feature_available else None
+        first_name = (current_user.full_name or current_user.username).split()[0]
     return render_template(
         "core/index.html",
         user=current_user,
         shifts=shifts,
-        falls=falls,
         preferences=preferences,
+        bike=bike,
+        bike_feature_available=bike_feature_available,
+        first_name=first_name,
     )
+
+
+def _assign_bike(bike):
+    if bike.user_id == current_user.id:
+        return
+    if current_user.bike is not None:
+        current_user.bike.user_id = None
+        db.session.flush()
+    bike.user_id = current_user.id
+    db.session.commit()
+    flash(translate('home.bike_linked'), 'success')
+
+
+@core_bp.post('/bikes/connect')
+@login_required
+def connect_bike():
+    code = (request.form.get('bike_id') or '').strip()
+    if not re.fullmatch(r'[A-Za-z0-9_-]{1,32}', code):
+        flash(translate('home.bike_invalid'), 'error')
+    elif not bike_storage_available():
+        flash(translate('home.bike_unavailable'), 'error')
+    else:
+        bike = Bike.query.filter_by(bike_id=code).first()
+        if bike is None:
+            flash(translate('home.bike_not_found'), 'error')
+        else:
+            _assign_bike(bike)
+    return redirect(url_for('core.index'))
 
 
 @core_bp.route("/bike/<bike_id>")
 @login_required
 def link_bike(bike_id):
     """Associate a bike with the current rider, replacing any existing bike."""
+    if not bike_storage_available():
+        flash(translate('home.bike_unavailable'), 'error')
+        return redirect(url_for('core.index'))
     bike = Bike.query.filter_by(bike_id=bike_id).first_or_404()
-
-    if bike.user_id != current_user.id:
-        if current_user.bike is not None:
-            current_user.bike.user_id = None
-            # Flush before assigning the replacement so the one-bike unique
-            # constraint is respected by every supported database engine.
-            db.session.flush()
-
-        bike.user_id = current_user.id
-        db.session.commit()
-        flash('Bike linked to your account.', 'success')
-
+    _assign_bike(bike)
     return redirect(url_for('core.index'))
 
 @core_bp.route("/download/gpx/<int:shift_id>")
